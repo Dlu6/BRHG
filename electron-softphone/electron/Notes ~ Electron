@@ -1,0 +1,18 @@
+TO BUILD ELECTRON APP
+
+1. cd into electron-softphone
+2. npm run build
+3. npm run electron:build
+
+
+#ADD ICON
+~ Create a 256*256px .ico
+~ Add it to the build folder
+
+#DEPLOY
+~The built .exe file is in the release folder || For quick access.
+~ Upload it to the server
+~ Update the download link in the electron-builder.json file
+~ Run the deploy script
+~ npm run electron:deploy
+

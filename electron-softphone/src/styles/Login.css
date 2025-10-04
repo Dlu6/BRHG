@@ -1,0 +1,165 @@
+html,
+body {
+  height: 100%; /* Ensure the body takes full height */
+  margin: 0; /* Remove default margin */
+  overflow: hidden; /* Prevent body from scrolling */
+}
+
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh; /* Use full viewport height */
+  background-color: #2d3436;
+  padding: 20px;
+  overflow-y: auto; /* Enable vertical scrolling */
+}
+
+.login-box {
+  background: #f5f6fa;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+  margin: 20px auto;
+  overflow: hidden; /* Ensure content doesn't overflow the box */
+}
+
+.title {
+  text-align: center;
+  color: #02406d;
+  font-size: 2.3rem;
+  margin-bottom: 1rem;
+  font-weight: bold;
+}
+
+.subtitle {
+  text-align: center;
+  color: #0376ac;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.input-group {
+  margin-bottom: 1rem;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #00b894;
+  font-size: 1rem;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #dcdde1;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: #74b9ff;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.remember-me label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #2d3436;
+  cursor: pointer;
+}
+
+.remember-me input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
+.login-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  width: auto;
+  padding: 0.75rem 2rem;
+  background-color: #00b894;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.login-button:hover {
+  background-color: #00a884;
+}
+
+.version {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  color: #636e72;
+  font-size: 0.8rem;
+}
+
+/* Add close button styling */
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 1.5rem;
+  color: #636e72;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+.error-message {
+  color: #ff4757;
+  background-color: #ffe0e3;
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.login-button:disabled {
+  background-color: #b2bec3;
+  cursor: not-allowed;
+}
+
+.logo {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  margin: 0 auto 2rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+  border: 0px solid #02406d;
+  padding: 2px;
+  background-color: white;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

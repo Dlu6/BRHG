@@ -1,0 +1,65 @@
+#Start electron app and vite concurrently with hot reloading
+
+```bash
+npm run start
+```
+
+#To run only vite
+
+```bash
+npm run dev
+```
+
+#To run only electron app
+
+```bash
+npm run start:electron
+```
+
+Login with test credentials
+
+username: '1000',
+password: 'password123',
+domain: '172.17.0.2' // Asterisk container's IP
+
+#To start Docker container with Asterisk
+
+```bash
+-docker start asterisk
+-docker exec -it asterisk /bin/sh
+```
+
+// Example usage in a service
+const wsUrl = import.meta.env.VITE_WS_URL;
+const asteriskHost = import.meta.env.VITE_ASTERISK_HOST;
+
+#To install electron devtools
+npm install --save-dev electron-devtools-installer@3.2.0
+npm install --save-dev redux-logger
+
+#To run electron app with devtools
+
+# Start development with hot reload [cd electron-softphone/]
+
+------>>>>>>>>
+npm run electron:dev
+
+#To build electron production app
+
+# Build for all platforms
+
+npm run electron:build
+
+# Platform specific builds
+
+npm run electron:build:win =====> The built executable will be in the release folder.
+npm run electron:build:mac
+npm run electron:build:linux
+
+#To Clean build artifacts
+npm run clean
+
+########## Clean build ##########
+~ npm run clean
+~ npm run prebuild && npm run build
+~ npm run electron:build:mac || npm run electron:build:win

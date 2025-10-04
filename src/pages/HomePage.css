@@ -1,0 +1,424 @@
+/* 
+  Note: For the intended 'mission control' aesthetic, consider importing these fonts 
+  in your main index.html or App's CSS file:
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+*/
+
+:root {
+  --primary-color: #ffc400; /* Amber */
+  --secondary-color: #00e5ff; /* Cyan */
+  --background-color: #0d0d1a;
+  --background-secondary-color: #1a1a2e;
+  --text-color: #e0e0e0;
+  --border-color: rgba(255, 196, 0, 0.2);
+  --font-heading: "Chakra Petch", sans-serif;
+  --font-body: "Roboto", sans-serif;
+}
+
+.home-page {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  font-family: var(--font-body);
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+.scroll-container {
+  height: 100vh;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none; /* Firefox */
+}
+.scroll-container::-webkit-scrollbar {
+  display: none; /* Safari & Chrome */
+}
+
+/* Background Effects */
+.background-effects {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.grid {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  background-image: linear-gradient(
+      rgba(255, 196, 0, 0.07) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(255, 196, 0, 0.07) 1px, transparent 1px);
+  background-size: 1.8rem 1.8rem;
+  opacity: 0.5;
+}
+
+.scanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0) 0,
+    rgba(0, 0, 0, 0.2) 50%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  background-size: 100% 4px;
+  animation: scanline-anim 10s linear infinite;
+  opacity: 0.3;
+}
+
+@keyframes scanline-anim {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 170px;
+  }
+}
+
+.glowing-orb {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50vw;
+  height: 50vw;
+  max-width: 700px;
+  max-height: 700px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle,
+    rgba(0, 229, 255, 0.1) 0%,
+    rgba(0, 229, 255, 0) 60%
+  );
+  border-radius: 50%;
+  animation: pulse 8s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 1;
+  }
+}
+
+.data-arc {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border: 2px solid;
+  border-color: transparent transparent var(--secondary-color)
+    var(--secondary-color);
+  border-radius: 50%;
+  animation: rotate 20s linear infinite;
+}
+
+.data-arc-1 {
+  width: 60vw;
+  height: 60vw;
+  max-width: 800px;
+  max-height: 800px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  opacity: 0.3;
+  animation-duration: 15s;
+}
+
+.data-arc-2 {
+  width: 70vw;
+  height: 70vw;
+  max-width: 900px;
+  max-height: 900px;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  opacity: 0.4;
+  animation-duration: 25s;
+  animation-direction: reverse;
+}
+
+.data-arc-3 {
+  width: 80vw;
+  height: 80vw;
+  max-width: 1000px;
+  max-height: 1000px;
+  transform: translate(-50%, -50%) rotate(10deg);
+  opacity: 0.2;
+  animation-duration: 35s;
+}
+
+@keyframes rotate {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* Make content appear above background effects */
+.scroll-container > header,
+.scroll-container > main {
+  position: relative;
+  z-index: 1;
+}
+
+/* Section adjustments for snapping */
+.hero-section,
+.home-page section {
+  scroll-snap-align: start;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Hero Section */
+.hero-section {
+  text-align: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.hero-title {
+  font-family: var(--font-heading);
+  font-size: clamp(2.8rem, 11vw, 7rem);
+  color: var(--primary-color);
+  margin: 0;
+  line-height: 1;
+  text-shadow: 0 0 12px rgba(255, 196, 0, 0.7);
+  animation: flicker 2s infinite alternate;
+}
+
+.hero-title .hero-subtitle {
+  display: block;
+  font-size: clamp(0.8rem, 3vw, 2rem);
+  color: var(--secondary-color);
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.7);
+  margin-top: 0.7rem;
+  margin-bottom: 0.5rem;
+  animation: flicker 3s infinite alternate;
+}
+
+@keyframes flicker {
+  0%,
+  18%,
+  22%,
+  25%,
+  53%,
+  57%,
+  100% {
+    opacity: 1;
+  }
+  20%,
+  24%,
+  55% {
+    opacity: 0.4;
+  }
+}
+
+.hero-intro {
+  max-width: 600px;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 1.5rem 0;
+  animation: fadeIn 2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* General Section Styling */
+.home-page section {
+  padding: 4rem 1.5rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.section-title {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  color: var(--secondary-color);
+  margin-bottom: 1.5rem;
+  text-shadow: 0 0 4px rgba(0, 229, 255, 0.5);
+}
+
+/* Philosophy Section */
+.philosophy-section h2 {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  color: var(--primary-color);
+  margin-bottom: 1.2rem;
+  line-height: 1.3;
+}
+
+.philosophy-section p {
+  max-width: 650px;
+  margin: 0 auto;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+/* Features Section */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 1.2rem;
+  max-w: 1100px;
+  margin: 2.5rem auto 0;
+  text-align: left;
+}
+
+.feature-card {
+  background-color: var(--background-secondary-color);
+  border: 1px solid var(--border-color);
+  padding: 1.5rem;
+  border-radius: 6px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 0 20px var(--border-color);
+}
+
+.feature-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.feature-card h3 {
+  font-family: var(--font-heading);
+  color: var(--primary-color);
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.feature-icon {
+  font-size: 4rem;
+}
+
+.feature-card p {
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+/* Benefits Section */
+.benefits-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem auto 0;
+  max-w: 750px;
+  text-align: left;
+}
+
+.benefits-list li {
+  font-size: 1rem;
+  margin-bottom: 0.8rem;
+  display: flex;
+  align-items: center;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #444;
+  margin-right: 0.8rem;
+  flex-shrink: 0;
+  border: 1px solid var(--primary-color);
+}
+
+.status-indicator.active {
+  background-color: var(--primary-color);
+  box-shadow: 0 0 8px var(--primary-color);
+}
+
+/* CTA Section */
+.cta-section h2 {
+  font-family: var(--font-heading);
+  color: #ff4d4d; /* Red for urgency */
+  font-size: 2rem;
+  text-shadow: 0 0 8px rgba(255, 77, 77, 0.7);
+}
+
+.cta-section p {
+  max-width: 550px;
+  margin: 1.2rem auto;
+  font-size: 1rem;
+}
+
+/* Buttons */
+.cta-button,
+.cta-button-secondary {
+  font-family: var(--font-heading);
+  padding: 0.7rem 2rem;
+  font-size: 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  margin-top: 0.8rem;
+}
+
+.cta-button {
+  background-color: var(--primary-color);
+  color: #000;
+  font-weight: bold;
+}
+
+.cta-button:hover {
+  background-color: transparent;
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 10px var(--primary-color);
+}
+
+.cta-button-secondary {
+  background-color: transparent;
+  color: var(--secondary-color);
+  border-color: var(--secondary-color);
+}
+
+.cta-button-secondary:hover {
+  background-color: var(--secondary-color);
+  color: #000;
+  box-shadow: 0 0 15px var(--secondary-color);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .home-page section {
+    padding: 3rem 1rem;
+  }
+  .section-title,
+  .philosophy-section h2,
+  .cta-section h2 {
+    font-size: 1.8rem;
+  }
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+}

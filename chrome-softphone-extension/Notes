@@ -1,0 +1,244 @@
+# Mayday Bar Extension - Chrome Web Store Submission Guide
+
+## 📦 Current Submission Status
+
+**Extension Name**: Mayday Bar  
+**Version**: 1.0.6 (Latest version with enhanced features and bug fixes)  
+**ZIP File**: `mayday-bar-extension-v1.0.6.zip` (Built from dist/)  
+**Status**: Ready for Chrome Web Store submission
+
+## 🚨 Chrome Web Store Rejection - RESOLVED
+
+### Issue: "Use of Permissions" Violation
+
+- **Violation ID**: Purple Potassium
+- **Problem**: Extension was requesting `scripting` permission but not using it
+- **Solution**: ✅ Removed unused `scripting` permission from manifest.json
+- **Status**: ✅ Fixed and ready for resubmission
+
+### Updated Permissions (v1.0.3)
+
+- ✅ **storage**: Save user preferences and call history
+- ✅ **activeTab**: Access current tab for CRM integration
+- ✅ **tabs**: Manage multiple tabs with extension
+- ✅ **notifications**: Show call notifications
+- ❌ **scripting**: Removed (was not being used)
+
+## 🚀 Resubmission Steps
+
+### 1. Upload New Package
+
+1. Go to [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole/)
+2. Select "Mayday Bar" extension (ID: hfgmdmebieoidjbehhodimaghipehnhm)
+3. Go to "Package" section
+4. Upload `mayday-bar-extension-v1.0.6.zip`
+5. Update version to 1.0.6
+
+### 2. Update Release Notes
+
+```
+Version 1.0.6 - Latest Release
+• Enhanced session management and cleanup
+• Improved error handling and user feedback
+• Better license validation and status indicators
+• Enhanced call history functionality
+• Improved audio device management
+• Better WebRTC connection stability
+• Enhanced debugging and logging
+• All previous functionality remains unchanged
+
+Version 1.0.3 - Enhanced Call History & UI Improvements
+• Enhanced call duration display in call history
+• Removed redundant "From" parameter from call history
+• Improved call history formatting and readability
+• Better duration calculation for answered and unanswered calls
+• UI improvements for cleaner call history display
+• All previous functionality remains unchanged
+
+Version 1.0.1 - Bug Fix
+• Fixed Chrome Web Store compliance issue
+• Removed unused scripting permission
+• All functionality remains unchanged
+
+Version 1.0.0 - Initial Release
+• Professional WebRTC softphone for call center agents
+• Advanced call management features (transfer, hold, mute)
+• CRM integration with Zoho and custom platforms
+• Real-time license validation and session management
+• High-quality audio with echo cancellation
+• Call history tracking and management
+• Agent pause/unpause functionality
+• Secure WebRTC communication
+```
+
+### 3. Update Privacy Section
+
+Remove the scripting justification from the privacy section since it's no longer needed.
+
+## 📋 Updated Privacy Fields (v1.0.1)
+
+### Permission Justifications (Updated)
+
+- **Storage**: Save user preferences, call history, authentication tokens
+- **ActiveTab**: Inject softphone interface into CRM pages
+- **Tabs**: Maintain state across multiple browser tabs
+- **Notifications**: Alert users about calls and system events
+
+### Removed Justification
+
+- ~~**Scripting**: Manage UI components and interactions~~ (No longer needed)
+
+## 🔄 Future Update Process
+
+### For New Versions (1.0.2, 1.1.0, etc.)
+
+#### 1. Update Version Numbers
+
+```bash
+# Update package.json
+npm version patch  # for 1.0.2
+npm version minor  # for 1.1.0
+npm version major  # for 2.0.0
+
+# Update manifest.json version to match
+```
+
+#### 2. Rebuild Extension
+
+```bash
+npm run build
+```
+
+#### 3. Create New ZIP File
+
+```bash
+cd dist
+zip -r ../mayday-bar-extension-v1.0.2.zip .
+```
+
+#### 4. Chrome Web Store Update
+
+1. Go to [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole/)
+2. Select "Mayday Bar" extension
+3. Go to "Package" section
+4. Upload new ZIP file
+5. Update release notes in "Store listing" section
+6. Submit for review
+
+#### 5. Update Release Notes Template
+
+```
+Version X.X.X - [Update Type]
+• [New feature 1]
+• [New feature 2]
+• [Bug fix 1]
+• [Bug fix 2]
+• [Performance improvement]
+• [Security update]
+```
+
+### Update Checklist
+
+- [ ] Version numbers updated in package.json and manifest.json
+- [ ] Code changes tested locally
+- [ ] Extension rebuilt successfully
+- [ ] New ZIP file created
+- [ ] Release notes written
+- [ ] Updated package uploaded to Chrome Web Store
+- [ ] Store listing updated with new release notes
+- [ ] Submission for review completed
+
+## 📋 Resubmission Checklist
+
+### Pre-Resubmission
+
+- [x] Extension built successfully (v1.0.6)
+- [x] ZIP file created (`mayday-bar-extension-v1.0.6.zip`)
+- [x] Manifest.json updated (removed scripting permission)
+- [x] Description length fixed (84 characters, under 132 limit)
+- [x] Privacy fields updated (removed scripting justification)
+- [ ] Screenshots created
+- [ ] Promotional images created
+- [ ] Support URLs available
+
+### Store Listing
+
+- [ ] Extension name: "Mayday Bar"
+- [ ] Short description added
+- [ ] Detailed description added
+- [ ] Category: "Productivity"
+- [ ] Language: English
+- [ ] Release notes updated (v1.0.6)
+
+### Privacy Section (Updated)
+
+- [x] Single purpose description
+- [x] Permission justifications (4 fields - removed scripting)
+- [x] Host permission justification
+- [x] Remote code justification
+- [x] Data usage categories selected
+
+### Final Steps
+
+- [ ] All store assets uploaded
+- [ ] Support information added
+- [ ] Content rating completed
+- [ ] Extension submitted for review
+
+## 📞 Support Information
+
+### URLs Needed
+
+- **Support URL**: `https://maydaycrm.com/support`
+- **Homepage URL**: `https://maydaycrm.com`
+- **Privacy Policy URL**: `https://maydaycrm.com/privacy-policy`
+
+### Contact Information
+
+- **Support Email**: support@maydaycrm.com
+- **Developer Email**: medhi.matovu@gmail.com
+
+## 🎯 Current Status
+
+**Ready for resubmission:**
+
+1. ✅ Fixed scripting permission issue
+2. ✅ New package created (v1.0.6)
+3. ✅ Updated release notes
+4. ⏳ Screenshots and promotional images needed
+5. ⏳ Support URLs setup
+6. ⏳ Final review and submission
+
+**Extension ID**: `hfgmdmebieoidjbehhodimaghipehnhm`  
+**Publisher**: medhi.matovu@gmail.com  
+**Status**: Draft (Ready for resubmission)
+
+## 🔍 What Was Fixed
+
+### Before (v1.0.0 - Rejected)
+
+```json
+"permissions": ["storage", "activeTab", "scripting", "tabs", "notifications"]
+```
+
+### After (v1.0.1 - Fixed)
+
+```json
+"permissions": ["storage", "activeTab", "tabs", "notifications"]
+```
+
+The extension never actually used the `scripting` permission, so removing it doesn't affect functionality but makes it compliant with Chrome Web Store policies.
+
+---
+
+**Last Updated**: July 30, 2024  
+**Next Review**: After resubmission
+
+#### Publishing to Chrome Store
+
+- Increment package version
+- cd chrome-softphone-extension && npm run build
+- cd dist && zip -r ../mayday-bar-extension-v1.0.1.zip .
+- Go to Chrome Web Store Developer Dashboard ~ https://chrome.google.com/webstore/devconsole/
+- Click "Add new item"
+- Upload the mayday-bar-extension-v1.0.1.zip file
