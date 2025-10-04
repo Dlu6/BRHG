@@ -170,7 +170,7 @@ echo "✅ Database migrations completed successfully!"
 
 # Start application with PM2
 echo "🚀 Starting application with PM2..."
-pm2 start ${PROJECT_DIR}/ecosystem.config.js --update-env
+pm2 start ${PROJECT_DIR}/ecosystem.config.cjs --update-env
 pm2 save
 pm2 startup
 

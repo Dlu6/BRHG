@@ -72,7 +72,7 @@ echo -e "${BLUE}🔄 Restarting PM2 services...${NC}"
 if pm2 describe brhg-callcenter-backend >/dev/null 2>&1; then
     pm2 restart brhg-callcenter-backend
 else
-    pm2 start ecosystem.config.js --only brhg-callcenter-backend
+    pm2 start ecosystem.config.cjs --only brhg-callcenter-backend
 fi
 
 pm2 save

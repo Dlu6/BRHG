@@ -63,7 +63,7 @@ if pm2 describe brhg-callcenter-backend >/dev/null 2>&1; then
   pm2 restart brhg-callcenter-backend
 else
   warn "PM2 app 'brhg-callcenter-backend' not found; starting via ecosystem"
-  pm2 start ecosystem.config.js --only brhg-callcenter-backend || true
+  pm2 start ecosystem.config.cjs --only brhg-callcenter-backend || true
 fi
 
 pm2 save || true
