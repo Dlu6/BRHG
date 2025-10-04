@@ -38,7 +38,7 @@ import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import LogoutButton from "./auth/LogoutButton";
 // import reachmilogo from "../assets/images/reachmi-logo.svg";
 // import morvenlogo from "../assets/images/morven-logo.png";
-import hugamaraLogo from "../assets/images/hugamara-logo.svg";
+import brLogo from "../assets/images/br-logo.svg";
 import useLicense from "../hooks/useLicense";
 
 const Layout = () => {
@@ -305,7 +305,7 @@ const Layout = () => {
           </IconButton>
           {/* Logo with white shadow and larger size */}
           <img
-            src={hugamaraLogo}
+            src={brLogo}
             alt="Mayday Logo"
             style={{
               width: "150px",
@@ -314,7 +314,7 @@ const Layout = () => {
               marginRight: "10px",
               marginTop: "10px",
               filter:
-                "drop-shadow(0 0 8px rgb(23, 200, 244)) drop-shadow(0 0 4px rgba(255, 255, 255, 0.31))",
+                "drop-shadow(0 0 8px rgb(176, 233, 248)) drop-shadow(0 0 4px rgba(255, 255, 255, 0.31))",
               // alignSelf: "center",
             }}
           />

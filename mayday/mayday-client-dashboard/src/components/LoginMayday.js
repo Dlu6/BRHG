@@ -21,7 +21,7 @@ import {
 import { useSnackbar } from "notistack";
 import useAuth from "../hooks/useAuth";
 // import reachmilogo from "../assets/images/reachmi-logo.svg"; // Placeholder path
-import hugamaraLogo from "../assets/images/hugamara-dark-logo.svg"; // Placeholder path
+import brLogo from "../assets/images/br-logo.svg"; // Placeholder path
 
 const LoginMayday = () => {
   const [username, setUsername] = useState("");
@@ -121,13 +121,13 @@ const LoginMayday = () => {
 
           {/* Add Logo */}
           <img
-            src={hugamaraLogo}
+            src={brLogo}
             alt="Mayday Logo"
             style={{
-              width: "300px",
-              height: "300px",
+              width: "400px",
+              height: "400px",
               objectFit: "contain",
-              marginBottom: "-3rem",
+              marginBottom: "-10rem",
               // center the logo
               display: "block",
               marginLeft: "auto",
