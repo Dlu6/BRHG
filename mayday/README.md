@@ -83,7 +83,8 @@ The Mayday Call Center system consists of two main components:
    ```
 
 5. **Access the application:**
-   - **Call Center Dashboard**: http://localhost:3002
+   - **Development**: http://localhost:3002
+   - **Production**: https://cs.backspace.ug/callcenter/
    - **Login Credentials**:
      - Username: `admin`
      - Password: `Pasword@256`
@@ -185,6 +186,13 @@ Main Hugamara System          Mayday Call Center
 - **WebSocket Real-time Updates**: Live status updates to dashboard
 
 ### Recent Improvements (October 2025)
+
+#### Production Deployment Fixes (Oct 4, 2025)
+
+- **✅ React Routing Issue (CRITICAL)**: Fixed blank white screen in production by properly configuring React app with `homepage: "/callcenter/"` and updating nginx to serve static assets from correct paths
+- **✅ Static Assets Routing**: Fixed 404 errors for JavaScript, CSS, and other static files by adding proper nginx location blocks for `/static/` and individual assets
+- **✅ Nginx Configuration**: Updated nginx to properly handle SPA routing with correct `try_files` directives and asset serving
+- **✅ Production URL Structure**: Application now correctly serves at `https://cs.backspace.ug/callcenter/` with proper asset loading
 
 #### Dashboard Analytics Fixes (Oct 1, 2025)
 
@@ -1240,6 +1248,7 @@ curl --location 'https://sms.cyber-innovative.com/secure/send' \
    - Configure SSL termination
    - Set up load balancing if needed
    - Configure CORS and security headers
+   - **Important**: Ensure nginx is configured to serve React app at `/callcenter/` path with proper static asset routing
 
 5. **Configure SSL certificates**
 
@@ -1252,9 +1261,59 @@ curl --location 'https://sms.cyber-innovative.com/secure/send' \
    - Set up health checks
    - Monitor AMI connections and database performance
 
+### Production URL Structure
+
+The production deployment uses a specific URL structure:
+
+- **Main Dashboard**: `https://cs.backspace.ug/callcenter/`
+- **API Endpoints**: `https://cs.backspace.ug/mayday-api/api/`
+- **WebSocket**: `wss://cs.backspace.ug/socket.io/`
+
+### Deployment Scripts
+
+Use the provided deployment scripts for automated deployment:
+
+```bash
+# Full deployment
+./deploy-on-vm.sh
+
+# Quick fix for routing issues
+./fix-static-assets.sh
+```
+
+### React App Configuration
+
+The React app is configured with:
+
+- `homepage: "/callcenter/"` in `package.json`
+- `basename="/callcenter"` in `App.jsx`
+- Nginx serves static assets from `/static/` path
+- Proper SPA routing with `try_files` directives
+
 ## 🔧 Troubleshooting
 
 ### Common Issues
+
+#### Production Deployment Issues
+
+**Blank White Screen in Production:**
+
+- Check if React app has correct `homepage: "/callcenter/"` in `package.json`
+- Verify nginx is configured to serve static assets from `/static/` path
+- Ensure nginx has proper `try_files` directives for SPA routing
+- Check browser console for 404 errors on static assets
+
+**Static Assets Not Loading (404 errors):**
+
+- Verify nginx location blocks for `/static/` and individual assets
+- Check file permissions on build directory (`chown -R www-data:www-data build/`)
+- Ensure build directory exists and contains `index.html`
+
+**API Calls Failing:**
+
+- Verify backend is running on port 5001
+- Check nginx proxy configuration for `/mayday-api/api/` path
+- Test backend health endpoint: `curl https://cs.backspace.ug/mayday-api/api/system/health`
 
 #### Port Conflicts
 
