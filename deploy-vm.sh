@@ -49,7 +49,7 @@ ok "Frontend builds completed"
 if [ -f "$ROOT_DIR/brhg-hugamara.conf" ]; then
   info "Validating and reloading nginx"
   if sudo nginx -t; then
-    sudo cp "$ROOT_DIR/brhg-hugamara.conf" /etc/nginx/sites-available/brhg || true
+    sudo cp "$ROOT_DIR/brhg-hugamara.conf" /etc/nginx/sites-available/mayday || true
     sudo systemctl reload nginx || true
     ok "nginx reloaded"
   else

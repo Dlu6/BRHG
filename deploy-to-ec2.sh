@@ -118,8 +118,8 @@ systemctl start nginx
 
 # Configure nginx site with SSL
 echo "🌐 Setting up Nginx configuration..."
-cp ${PROJECT_DIR}/brhg-hugamara.conf /etc/nginx/sites-available/brhg
-ln -sf /etc/nginx/sites-available/brhg /etc/nginx/sites-enabled/brhg
+cp ${PROJECT_DIR}/brhg-hugamara.conf /etc/nginx/sites-available/mayday
+ln -sf /etc/nginx/sites-available/mayday /etc/nginx/sites-enabled/mayday
 rm -f /etc/nginx/sites-enabled/default
 
 # Test nginx configuration
