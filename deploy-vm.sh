@@ -22,7 +22,7 @@ cd "$ROOT_DIR"
 info "Project root: $ROOT_DIR"
 
 # Frontend build-time variables for React builds
-: "${REACT_APP_CALL_CENTER_URL:=https://cs.backspace.ug/callcenter/}"
+: "${REACT_APP_CALL_CENTER_URL:=https://cs.backspace.ug/}"
 export REACT_APP_CALL_CENTER_URL
 info "REACT_APP_CALL_CENTER_URL=$REACT_APP_CALL_CENTER_URL"
 
@@ -41,6 +41,7 @@ fi
 info "Building call center dashboard (optimized for low-memory VMs)"
 (cd mayday/mayday-client-dashboard \
   && npm install --no-audit --no-fund \
+  && (grep -q '"homepage":' package.json && sed -i '/"homepage":/d' package.json || true) \
   && CI=false GENERATE_SOURCEMAP=false NODE_OPTIONS="--max_old_space_size=3072" npm run build)
 
 ok "Frontend builds completed"

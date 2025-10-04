@@ -40,6 +40,11 @@ npm install --no-audit --no-fund
 
 # Build frontend
 echo -e "${BLUE}🏗️ Building frontend...${NC}"
+# Remove homepage setting to build for root path
+if grep -q '"homepage":' package.json; then
+    echo -e "${YELLOW}⚠️  Removing homepage setting for root path serving...${NC}"
+    sed -i '/"homepage":/d' package.json
+fi
 CI=false GENERATE_SOURCEMAP=false NODE_OPTIONS="--max_old_space_size=3072" npm run build
 
 # Go back to project root
@@ -83,7 +88,7 @@ pm2 status
 
 echo -e "${GREEN}🎉 Deployment completed successfully!${NC}"
 echo -e "${YELLOW}📋 Access URLs:${NC}"
-echo "• Call Center Dashboard: https://cs.backspace.ug/callcenter/"
+echo "• Call Center Dashboard: https://cs.backspace.ug/"
 echo "• Call Center API: https://cs.backspace.ug/mayday-api/api/"
 echo ""
 echo -e "${YELLOW}🔧 Useful commands:${NC}"

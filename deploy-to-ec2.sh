@@ -107,6 +107,11 @@ npm install
 
 # Build call center frontend
 echo "🏗️ Building call center frontend..."
+# Remove homepage setting to build for root path
+if grep -q '"homepage":' package.json; then
+    echo "⚠️  Removing homepage setting for root path serving..."
+    sed -i '/"homepage":/d' package.json
+fi
 npm run build
 
 ############### SSL + Nginx setup ###############
