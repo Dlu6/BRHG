@@ -45,7 +45,22 @@ if grep -q '"homepage":' package.json; then
     echo -e "${YELLOW}⚠️  Removing homepage setting for root path serving...${NC}"
     sed -i '/"homepage":/d' package.json
 fi
+
+# Clean previous build
+echo -e "${BLUE}🧹 Cleaning previous build...${NC}"
+rm -rf build
+
+# Build with proper environment
+echo -e "${BLUE}🏗️ Building React app...${NC}"
 CI=false GENERATE_SOURCEMAP=false NODE_OPTIONS="--max_old_space_size=3072" npm run build
+
+# Verify build was successful
+if [ ! -d "build" ] || [ ! -f "build/index.html" ]; then
+    echo -e "${RED}❌ Build failed - build directory or index.html not found${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✅ Frontend build completed successfully${NC}"
 
 # Go back to project root
 cd ../..
@@ -86,6 +101,23 @@ pm2 save
 echo -e "${BLUE}📊 Checking service status...${NC}"
 pm2 status
 
+# Verify build files exist
+echo -e "${BLUE}🔍 Verifying build files...${NC}"
+if [ -d "/home/admin/brhg-portal/mayday/mayday-client-dashboard/build" ]; then
+    echo -e "${GREEN}✅ Build directory exists${NC}"
+    ls -la /home/admin/brhg-portal/mayday/mayday-client-dashboard/build/
+else
+    echo -e "${RED}❌ Build directory not found${NC}"
+fi
+
+# Test nginx configuration
+echo -e "${BLUE}🌐 Testing nginx configuration...${NC}"
+if sudo nginx -t; then
+    echo -e "${GREEN}✅ Nginx configuration is valid${NC}"
+else
+    echo -e "${RED}❌ Nginx configuration has errors${NC}"
+fi
+
 echo -e "${GREEN}🎉 Deployment completed successfully!${NC}"
 echo -e "${YELLOW}📋 Access URLs:${NC}"
 echo "• Call Center Dashboard: https://cs.backspace.ug/"
@@ -95,3 +127,5 @@ echo -e "${YELLOW}🔧 Useful commands:${NC}"
 echo "• Check PM2 status: pm2 status"
 echo "• View logs: pm2 logs"
 echo "• Restart services: pm2 restart all"
+echo "• Check nginx status: sudo systemctl status nginx"
+echo "• View nginx logs: sudo tail -f /var/log/nginx/error.log"
