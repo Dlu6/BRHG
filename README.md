@@ -1,1299 +1,2112 @@
-# Mayday Call Center System
+# Hugamara Hospitality Management System
 
-A comprehensive Asterisk-based call center solution integrated into the Hugamara hospitality management system.
+A comprehensive hospitality management dashboard for Hugamara's 6 outlets, built with React, Node.js, and MySQL.
 
-## 🏗️ Architecture Overview
-
-The Mayday Call Center system consists of two main components:
+## Project Structure
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Hugamara Main Project                    │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐  │
-│  │   Main Backend  │  │  Main Frontend  │  │   Mayday    │  │
-│  │   (Port 8000)   │  │   (Port 3000)   │  │  Call Center│  │
-│  └─────────────────┘  └─────────────────┘  └─────────────┘  │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │              Mayday Call Center System                 │ │
-│  │  ┌─────────────────┐  ┌─────────────────────────────┐  │ │
-│  │  │  Slave Backend  │  │    Client Dashboard         │  │ │
-│  │  │  (Port 8004)    │  │    (Port 3002)              │  │ │
-│  │  └─────────────────┘  └─────────────────────────────┘  │ │
-│  └─────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-                    ┌─────────────────┐
-                    │  Asterisk PBX   │
-                    │  (EC2 Server)   │
-                    │  Port 5038 AMI  │
-                    └─────────────────┘
+hugamara/
+├── client/                 # Frontend React application (Hospitality Management)
+│   ├── public/            # Static assets
+│   ├── src/               # React source code
+│   ├── package.json       # Frontend dependencies
+│   ├── .env               # Frontend environment variables
+│   └── .env.example       # Frontend environment template
+├── backend/               # Backend Node.js API (Hospitality Management)
+│   ├── controllers/       # API controllers
+│   ├── models/           # Database models
+│   ├── routes/           # API routes
+│   ├── package.json      # Backend dependencies
+│   └── .env              # Backend environment variables
+├── mayday/                # Callcenter Management System
+│   ├── mayday-client-dashboard/  # Callcenter Frontend (React + Material-UI)
+│   │   ├── src/
+│   │   │   ├── components/    # React components
+│   │   │   ├── services/      # API services
+│   │   │   ├── store/         # Redux store
+│   │   │   └── pages/         # Page components
+│   │   └── package.json
+│   └── slave-backend/     # Callcenter Backend (Node.js + Express)
+│       ├── controllers/   # API controllers
+│       ├── models/        # Database models (Sequelize)
+│       ├── routes/        # API routes
+│       ├── services/      # Business logic services
+│       ├── migrations/    # Database migrations
+│       └── .env          # Backend environment variables
+├── package.json          # Root package.json (orchestration)
+└── README.md            # This file
 ```
 
-## 🚀 Quick Start
+## Callcenter Management System
+
+The system includes a comprehensive callcenter management dashboard built with React and Material-UI, and a desktop Electron softphone used by agents.
+
+### Email Management Module
+
+- **SMTP Configuration**: Complete SMTP server setup with Gmail, Outlook, and custom server support
+- **User Configuration**: Default sender settings, email signatures, and auto-reply functionality
+- **Security Policies**: Attachment restrictions, file type filtering, spam protection, and virus scanning
+- **Connection Testing**: Built-in SMTP connection testing and validation
+- **Professional UI**: Material-UI based interface with tabbed configuration sections
+
+### Electron Softphone (Appbar)
+
+- Electron + React desktop client with sections for Dialer, Agent Directory, Agent Status, Reports, WhatsApp, and Email
+- Uses SIP.js for WebRTC registration/calls and centralized reconnection/health monitoring
+- Dev start: `cd mayday/electron-softphone && npm run electron:dev`
+
+STUN/ICE configuration:
+
+- In development: uses Google public STUN fallbacks only (no backend dependency)
+- In production: tries `https://hugamara.com/api/users/network-config/stun` once; if unavailable, falls back to Google STUN
+
+Agent online notification:
+
+- Previous builds attempted POST `/api/users/agent-online` after login; this endpoint does not exist
+- The call has been removed from `mayday/electron-softphone/src/components/Login.jsx`
+
+### Key Features
+
+- **Multi-tenant Support**: Separate from hospitality management system
+- **Real-time Configuration**: Live SMTP testing and validation
+- **Security Controls**: Comprehensive email security and content policies
+- **User Management**: Role-based access control for email operations
+- **Database Integration**: Full Sequelize ORM integration with MySQL
+
+### Access
+
+- **Frontend**: `http://localhost:3001/callcenter` (Material-UI dashboard)
+- **Backend API**: `http://localhost:8004/api` (Callcenter backend)
+- **Email Management**: Navigate to "Email Management" in the callcenter dashboard
+- **Electron Softphone (dev)**: `cd mayday/electron-softphone && npm run electron:dev`
+
+## Asterisk Realtime + WebRTC + CDR
+
+For the call center stack (Asterisk 20):
+
+- Realtime dialplan via ODBC (`voice_extensions` with `exten` column)
+- WebRTC media using DTLS‑SRTP (`res_srtp.so` required)
+- CDR via Adaptive ODBC into `cdr` table (single source of truth)
+
+See: `docs/ASTERISK_REALTIME_CDR_AND_WEBRTC.md` for full setup and troubleshooting.
+
+## Inbound Routes Configuration (Realtime)
+
+This project uses Asterisk 20 with ODBC realtime for dialplan and PJSIP. Each provider DID (e.g. 0323300243–0323300249) is configured as its own inbound route so departments/outlets can manage traffic independently.
 
 ### Prerequisites
 
-- Node.js 16+ and npm 8+
-- Redis server running locally
-- Access to EC2 Asterisk server
-- MariaDB database access
+- PJSIP trunk configured with `send_pai=yes` and `send_rpid=yes` on the endpoint.
+- Context mapping in Asterisk to realtime tables (already included):
+  - `from-voip-provider` → `voice_extensions`
+  - File reference on server: `extensions_mayday_context.conf`
 
-### Installation & Setup
+### Create an inbound route (per DID)
 
-1. **Install dependencies:**
+1. Open Call Center Dashboard → `Voice → Inbound Routes`.
+2. Click “+ Add Inbound Route”.
+3. In Settings:
+   - Phone Number: enter the DID exactly as sent by the provider (e.g. `0323300244`).
+   - Context: `from-voip-provider`.
+   - Optional: Alias/Description to reflect the department or outlet.
+4. In Action tab (drag & drop):
+   - Optionally add a `Set` for normalization or tagging (e.g. set a variable, or a readable name).
+   - Add your destination (typically `Queue`) and select the department queue.
+   - Add terminal step (e.g. `Hangup`) if desired.
+5. Save. The UI writes the steps to the realtime `voice_extensions` table.
 
-   ```bash
-   npm run callcenter:install
-   ```
+### How routing works
 
-2. **Configure environment:**
+- Provider sends the DID to the Asterisk `Hugamara_Trunk` endpoint.
+- Context `from-voip-provider` is switched to realtime via `extconfig.conf`/`sorcery.conf` and `extensions_mayday_context.conf`.
+- The dialplan row matching the DID executes the configured Actions (Set/NoOp/Queue/etc.).
 
-   ```bash
-   # Copy environment files
-   cp mayday/slave-backend/env.example mayday/slave-backend/.env
-   cp mayday/mayday-client-dashboard/env.example mayday/mayday-client-dashboard/.env
-   ```
+### Testing
 
-   Configure the call center database connection in `mayday/slave-backend/.env`. Use a privileged user like `root` to ensure permissions for database migrations and schema synchronization.
+- Place a test call to each DID and confirm it lands in the intended queue/IVR.
+- Use Asterisk CLI for visibility:
+  - `sudo asterisk -rvvv`
+  - `pjsip set logger on` (verify To/PAI, DID format)
+  - `dialplan show from-voip-provider` (should show realtime switch)
 
-   ```ini
-   # Example for mayday/slave-backend/.env
-   DB_HOST=cs.hugamara.com
-   DB_PORT=3306
-   DB_USER=root
-   DB_PASSWORD=YOUR_ROOT_PASSWORD
-   DB_NAME=asterisk
-   ```
+### Common pitfalls
 
-3. **Configure trunk provider settings:**
+- DID format mismatch: if provider sends E.164 or includes a prefix, add a top `Set`/normalization step or use pattern routes to translate to your stored number.
+- Queue not ringing: verify queue and members exist and are not paused; check that the inbound route’s queue step has the right queue name.
+- No matching extension: ensure Phone Number in the route equals the inbound DID the provider sends.
 
-   ```bash
-   # Add to mayday/slave-backend/.env
-   echo "TRUNK_PROVIDER_AUTH_HEADER=MDMyMDAwMDAwODoxMy4yMzQuMTguMg==" >> mayday/slave-backend/.env
-   echo "TRUNK_PROVIDER_VALIDATE_URL=https://ug.cyber-innovative.com:444/cyber-api/cyber_validate.php" >> mayday/slave-backend/.env
-   ```
+## Outbound Caller ID (CLI) with Prefix Routes
 
-4. **Start the call center system:**
+Use per‑outlet prefix routes so agents can choose the DID to present. Example for “The Villa” (0323300244) with prefix 94:
 
-   ```bash
-   npm run callcenter
-   ```
+1. Settings in `Voice → Outbound Routes → Edit`:
 
-5. **Access the application:**
-   - **Call Center Dashboard**: http://localhost:3002
-   - **Login Credentials**:
-     - Username: `admin`
-     - Password: `Pasword@256`
+   - Context: `from-internal`
+   - Phone Number (pattern): `_94X.`
 
-### Individual Services
+2. Actions (order matters):
 
-- **Provisioning Backend only:** `npm run callcenter:provisioning` (Port 8001)
-- **Slave Backend only:** `npm run callcenter:backend` (Port 8004)
-- **Frontend only:** `npm run callcenter:frontend` (Port 3002)
+   - Custom → Application Name: `Set`
+     - Arguments: `CALLERID(all)="The Villa" <0323300244>`
+   - Custom → Application Name: `Dial`
+     - Arguments: `PJSIP/${EXTEN:2}@Hugamara_Trunk` (strips the 2‑digit prefix)
 
-## 📁 Project Structure
+3. Repeat for each outlet/DID with its own prefix (e.g., 95, 96…). Agents dial `<prefix><number>` to select identity.
 
-```
-mayday/
-├── slave-backend/                 # Node.js backend service
-│   ├── config/                   # Configuration files
-│   │   ├── sequelize.js         # Database configuration
-│   │   ├── redis.js             # Redis configuration
-│   │   └── amiClient.js         # Asterisk AMI client
-│   ├── controllers/              # API controllers
-│   ├── models/                   # Database models
-│   ├── routes/                   # Express routes
-│   ├── services/                 # Business logic services
-│   │   ├── amiService.js        # Asterisk AMI service
-│   │   ├── callMonitoringService.js
-│   │   └── agentStatusService.js
-│   ├── scripts/                  # Utility scripts
-│   │   └── setup-asterisk-config.sh
-│   └── server.js                 # Main server file
-│
-├── mayday-client-dashboard/       # React frontend
-│   ├── src/
-│   │   ├── components/           # React components
-│   │   ├── features/             # Feature modules
-│   │   ├── hooks/                # Custom React hooks
-│   │   ├── services/             # API services
-│   │   └── store/                # Redux store
-│   └── public/
-│
-└── README.md                     # This file
+### Trunk endpoint: identity header requirements (realtime)
+
+Your provider must accept identity headers. Ensure these are enabled on the trunk endpoint (`ps_endpoints.id='Hugamara_Trunk'`):
+
+- `send_pai = yes`
+- `send_rpid = yes`
+- `rpid_immediate = yes`
+- `trust_id_outbound = yes`
+
+Verify live settings:
+
+```bash
+sudo asterisk -rvvv
+pjsip show endpoint Hugamara_Trunk | egrep "send_pai|send_rpid|rpid_immediate|trust_id_outbound|from_user"
 ```
 
-## 🌐 Services & Ports
+Optional: also add P-Preferred-Identity/PAI explicitly in the route before Dial when testing providers that need it:
 
-| Service                  | Port | Description                |
-| ------------------------ | ---- | -------------------------- |
-| **Provisioning Backend** | 8001 | License management server  |
-| **Slave Backend**        | 8004 | Node.js API server         |
-| **Client Dashboard**     | 3002 | React frontend             |
-| **Asterisk AMI**         | 5038 | Asterisk Manager Interface |
-| **Redis**                | 6379 | Session storage            |
-| **MariaDB**              | 3306 | Database                   |
-
-## 🔌 Integration with Main Hugamara System
-
-### How It Fits In
-
-The Mayday Call Center system is designed as a **standalone module** within the Hugamara ecosystem:
-
-1. **Independent Operation**: Runs on separate ports (8001, 8004, 3002)
-2. **Shared Database**: Uses the same MariaDB instance with dedicated `asterisk` database
-3. **Shared Infrastructure**: Leverages existing Redis and EC2 infrastructure
-4. **Modular Design**: Can be enabled/disabled without affecting main hospitality system
-
-### Data Flow
-
-```
-Main Hugamara System          Mayday Call Center
-┌─────────────────┐          ┌─────────────────┐
-│   Hospitality   │          │   Call Center   │
-│   Management    │          │   Operations    │
-│                 │          │                 │
-│  - Reservations │          │  - Call Queue   │
-│  - Orders       │          │  - Agent Status │
-│  - Inventory    │          │  - Call Records │
-│  - Staff        │          │  - IVR System   │
-└─────────────────┘          └─────────────────┘
-         │                           │
-         └───────────┬───────────────┘
-                     ▼
-            ┌─────────────────┐
-            │   Shared DB     │
-            │   (MariaDB)     │
-            └─────────────────┘
+```text
+Custom → Set → PJSIP_HEADER(add,P-Preferred-Identity)=<sip:0323300244@siptrunk.cyber-innovative.com>
+Custom → Set → PJSIP_HEADER(add,P-Asserted-Identity)=<sip:0323300244@siptrunk.cyber-innovative.com>
 ```
 
-## 🎯 Features
+### Verifying what’s sent
 
-### Core Call Center Features
+- Enable SIP trace: `pjsip set logger on`, place a call using the prefix route.
+- Check the outbound INVITE to the provider. Expect `P-Asserted-Identity` and/or `P-Preferred-Identity` to contain `0323300244` (or E.164 if required).
 
-- **Real-time Call Monitoring**: Live call status and queue management
-- **Agent Management**: Agent status, availability, and performance tracking
-- **IVR System**: Interactive Voice Response configuration
-- **Call Routing**: Inbound and outbound call routing rules
-- **Queue Management**: Call queue configuration and monitoring
-- **Call Recording**: CDR (Call Detail Records) and call history
-- **WebRTC Support**: Browser-based softphone capabilities
-- **Asterisk AMI Integration**: Full Asterisk Manager Interface connectivity
-- **WebSocket Real-time Updates**: Live status updates to dashboard
+### Provider-side requirements
 
-### Recent Improvements (October 2025)
+If the callee still sees `0323300243` even though PAI/PPID show `0323300244` in the INVITE, the provider is overriding CLI. Request the provider to:
 
-#### Dashboard Analytics Fixes (Oct 1, 2025)
+- Whitelist/enable outbound CLI presentation for your DID range `0323300243–0323300249`.
+- Confirm required CLI format (national vs E.164, e.g., `+256323300244`).
+- If they only honor the account’s From user, either:
+  - Issue separate accounts per DID, or
+  - Accept PAI/PPID for your authorized DIDs.
 
-- **✅ Weekly > Monthly Stats Bug (CRITICAL)**: Fixed illogical data where weekly stats (123 calls) exceeded monthly stats (8 calls) by capping week start at current month start when Sunday falls in previous month
-- **✅ Timezone Bug (UTC+3)**: Fixed agent call statistics showing wrong day's data from midnight-3AM due to UTC conversion issues
-- **✅ Monthly Range Fix**: Changed from "last 30 days" to actual current month (Oct 1 - today)
-- **✅ Loading Indicator Fix**: Added 5-second timeout to prevent infinite loading spinner
-- **✅ Answered Calls Calculation**: Fixed week/month answered calls calculation (total - abandoned)
+Workaround if provider cannot present PAI/PPID: create one trunk per DID with `from_user` set to that DID, and route by the chosen prefix to the corresponding trunk.
 
-#### Session Recovery & Reliability
+## Outlet Contexts and Default Outbound
 
-- **Session Recovery System**: Automatic recovery of SIP, WebSocket, and dashboard connections after network issues or page refresh
-- **Connection Health Monitoring**: Real-time connection status indicators with automatic reconnection
-- **Grace Period Handling**: Prevents premature disconnections during authentication and logout flows
+Goal: allow agents to dial normally (no prefix) and automatically present the outlet’s DID.
 
-#### Call Center Features
+1. Create outlet contexts (UI)
 
-- **CDR Standardization**: Fixed disposition values to align with Asterisk standard (`ANSWERED` instead of `NORMAL`)
-- **Accurate Metrics**: Fixed abandon rate calculation to exclude internal Asterisk queue records
-- **Chrome Extension**: Auto re-registration after page refresh for seamless user experience
-- **Timezone Consistency**: System-wide timezone configuration (Africa/Nairobi - UTC+3)
+- Call Center Dashboard → Voice → Contexts → Add Context per outlet
+  - Name: `from-internal-<outlet>` (e.g., `from-internal-villa`)
+  - Include: `from-internal-custom`
+  - Realtime Key: same as Name
+  - Active: Yes
+- Click “Update Asterisk Contexts” to render `/etc/asterisk/mayday.d/extensions_mayday_contexts.conf` and reload the dialplan. Validate with:
+  - `sudo asterisk -rx "dialplan show from-internal-villa"` → should show Include and Alt. Switch to Realtime.
 
-📚 **[View CDR Fix Documentation](slave-backend/docs/CDR_AND_METRICS_FIX.md)**
+2. Create default outbound route per outlet (UI)
 
-### Integration Features
+- Voice → Outbound Routes → Create
+  - Context: the outlet context (e.g., `from-internal-villa`)
+  - Phone Number: `_X.`
+  - Actions:
+    1. Custom → Set → `CALLERID(all)="<Outlet Name>" <Outlet DID>`
+    2. Custom → Dial → `PJSIP/${EXTEN}@Hugamara_Trunk`
 
-- **Asterisk AMI**: Full Asterisk Manager Interface integration
-- **Database Sync**: Real-time database synchronization
-- **WebSocket Communication**: Real-time updates to frontend
-- **License Management**: Integrated licensing system with development fallback
-- **Multi-tenant Support**: Support for multiple organizations
-- **Redis Session Management**: Persistent session storage and cleanup
-- **Development Mode**: Automatic fallback license creation for development
-- **Chrome Extension**: Multi-tenant softphone extension with dynamic configuration
-- **Trunk Provider Integration**: External API integration for call validation
+3. Assign agents to their outlet context (UI)
 
-## 📊 Agent Availability & Status Logic
+- Staff → Agents → Edit → Voice tab → Context → pick outlet (e.g., `from-internal-villa`).
+- Result: normal dialing uses that outlet’s default route and DID.
 
-### Overview
+4. Optional: prefix routes for DID override
 
-The Mayday Call Center system determines agent availability through a **hybrid approach** combining multiple data sources with a priority-based system. This ensures accurate agent status even when individual data sources are unavailable or unreliable.
+- Create one prefix route per DID using `Custom → Dial` and `${EXTEN:n}` to strip the prefix (e.g., `_94X.` with `PJSIP/${EXTEN:2}@Hugamara_Trunk`).
 
-### Data Sources & Priority System
+5. Provider requirements
 
-Agent online/offline status is determined using a **three-tier priority system**:
+- Ensure the trunk endpoint has identity headers enabled (realtime PJSIP endpoint): `send_pai=yes`, `send_rpid=yes`, `trust_id_outbound=yes`.
+- Verify outbound INVITE has PAI/PPID using `pjsip set logger on`.
 
-#### Priority 1: Active Client Sessions (Most Reliable)
+## Outbound Routing (Default + Prefix)
 
-**Source**: `client_session` database table  
-**Checked via**: `agentStatusService.getActiveSessions()`
+Overview
 
-This is the **primary source of truth** for agent availability. When an agent logs into any client (Chrome Extension, Electron Softphone, WebRTC), an active session record is created with:
+- Default routes guarantee every agent dials out with their outlet’s DID with no extra steps.
+- Prefix routes let any agent temporarily choose another outlet’s DID by dialing a short prefix first.
 
-- Session token and expiration
-- SIP username (extension)
-- Client fingerprint and IP address
-- User agent and feature (e.g., "chrome_softphone", "electron_softphone")
-- Last heartbeat timestamp
+Prerequisites
 
-**Why Priority 1**: Client sessions are application-managed and include heartbeat monitoring, making them the most reliable indicator that an agent is actively logged in and ready to receive calls.
+- Create one outlet context per outlet (see section above) and press “Update Asterisk Contexts”.
+- Ensure the shared context `from-internal-custom` exists and is active; outlet contexts should `include => from-internal-custom`.
 
-**Status Determination**:
+1. Default per‑outlet routes (mandatory)
 
-- If an active, non-expired session exists → Agent is `online`
-- Session typology (chrome_softphone, electron_softphone, webRTC) is detected from user agent
-- Session IP address and last heartbeat are used for connection tracking
+- Location: Voice → Outbound Routes → Create
+- For each outlet/DID:
+  - Context: `from-internal-<outlet>` (e.g., `from-internal-villa`)
+  - Phone Number: `_X.`
+  - Actions (order matters):
+    1. Custom → Application: `Set`
+       - Arguments: `CALLERID(all)="<Outlet Name>" <DID>`
+    2. Custom → Application: `Dial`
+       - Arguments: `PJSIP/${EXTEN}@Hugamara_Trunk`
+- Result: Agents whose endpoint `context` is the outlet’s context will present that outlet’s DID when dialing normally.
 
-#### Priority 2: PJSIP Contact Registration
+2. Prefixed routes (optional overrides)
 
-**Source**: Multiple sources with fallback chain  
-**Checked via**:
+- Location: Voice → Outbound Routes → Create (define once in the shared context)
+- Context: `from-internal-custom`
+- Phone Number: `_<prefix>X.`
+  - Examples: `_94X.`, `_95X.`, `_96X.` (one per DID)
+- Actions (order matters):
+  1. Custom → `Set`
+     - `CALLERID(all)="<Outlet Name>" <DID>`
+  2. Custom → `Dial`
+     - `PJSIP/${EXTEN:n}@Hugamara_Trunk` (replace `n` with prefix length; for `94` use `${EXTEN:2}`)
+- Result: Agents dial `<prefix><destination>` to present that DID, regardless of their default outlet.
 
-1. Database realtime table (`ps_contacts`) - if Asterisk realtime is enabled
-2. Per-endpoint AMI query (`pjsip show endpoint <ext>`)
-3. Bulk AMI query (`pjsip show contacts`)
+3. Agent assignment
 
-**Why Priority 2**: PJSIP contacts indicate active SIP registration. If no client session exists but the agent's SIP endpoint is registered, the agent is still considered online.
+- Staff → Agents → Edit → Voice tab → Context → select outlet context (e.g., `from-internal-villa`).
+- Default calls follow the outlet route; dialing a prefix uses the mapped prefixed route.
 
-**Status Determination**:
+4. Patterns, examples, and tips
 
-- Contact status "Avail" or "Reachable" → Agent is `online`
-- Extracts IP address, port, and transport (UDP/TCP/WebSocket)
-- Provides RTT (Round Trip Time) for connection quality
+- Asterisk patterns must start with an underscore: `_X.`, `_94X.`
+- Example mapping:
+  - 94 → Villa → `CALLERID(all)="The Villa" <0323300244>` → Phone Number `_94X.` → Dial `PJSIP/${EXTEN:2}@Hugamara_Trunk`
+  - 95 → LaCueva → `CALLERID(all)="LaCueva" <0323300245>` → Phone Number `_95X.` → Dial `PJSIP/${EXTEN:2}@Hugamara_Trunk`
+- Optional normalization: insert `Set(DST=${EXTEN:2})` before Dial and dial `PJSIP/${DST}@...` if the trunk requires specific formatting.
 
-**Fallback Chain Logic**:
+5. Validation
 
-```javascript
-// 1. Try database realtime contacts (fastest, most reliable if enabled)
-let contactsData = await getPJSIPContactsFromDB();
+- Contexts rendered: `sudo asterisk -rx "dialplan show from-internal-<outlet>"`
+- Prefixed routes present: `sudo asterisk -rx "dialplan show from-internal-custom" | grep _9`
+- Live signaling: `asterisk -rvvv`, then `pjsip set logger on` and place a test call; confirm P-Asserted-Identity matches the chosen DID.
 
-// 2. If DB has no contacts, try precise per-endpoint AMI query
-if (Object.keys(contactsData).length === 0) {
-  contactsData = await getContactsByEndpoints();
-}
+6. Provider notes
 
-// 3. Fallback to bulk AMI contacts
-if (Object.keys(contactsData).length === 0) {
-  contactsData = await getPJSIPContacts();
-}
+- Trunk must honor CLI via PAI/RPID; enable on the endpoint: `send_pai=yes`, `send_rpid=yes`, `trust_id_outbound=yes` (realtime `ps_endpoints`).
+- If the provider rewrites CLI, ask them to whitelist your DIDs or require E.164 formatting.
+
+### Agent workflow (normal vs prefixed)
+
+- Each agent/extension has a single dialing context set on their endpoint (AgentEdit → Voice → Context).
+- Normal call: the agent dials a number without a prefix → Asterisk matches `_X.` in the agent’s outlet context → the outlet’s DID is presented.
+- Prefixed call: the agent dials `<prefix><destination>` (e.g., `94 0700…`) → `_94X.` in `from‑internal‑custom` matches more specifically → `${EXTEN:2}` strips the prefix and the mapped DID is presented for this call only.
+
+### Admin checklist (TL;DR)
+
+1. Create one context per outlet (e.g., `from-internal-villa`) and one shared context `from-internal-custom`.
+2. In each outlet context, add the default route:
+   - Phone Number `_X.`
+   - Actions: Set `CALLERID(all)` to the outlet DID → Custom Dial `PJSIP/${EXTEN}@Hugamara_Trunk`.
+3. In `from-internal-custom`, add one prefixed route per DID:
+   - Phone Number `_<prefix>X.` (e.g., `_94X.`)
+   - Actions: Set `CALLERID(all)` to that DID → Custom Dial `PJSIP/${EXTEN:n}@Hugamara_Trunk`.
+4. Assign each agent to their outlet context in AgentEdit.
+5. Press “Update Asterisk Contexts” and verify with `dialplan show`.
+
+### Base contexts and common warnings
+
+Define base contexts with keyed realtime switches and optional custom includes:
+
+```ini
+[from-sip]
+include => from-sip-custom
+switch  => Realtime/from-sip@voice_extensions
+
+[from-voip-provider]
+include => from-voip-provider-custom
+switch  => Realtime/from-voip-provider@voice_extensions
+
+[from-internal]
+include => from-internal-custom
+switch  => Realtime/from-internal@voice_extensions
 ```
 
-#### Priority 3: PJSIP Endpoint Configuration
+- If you see “tries to include nonexistent …-custom”, create that custom context in Voice → Contexts and sync.
+- The “Update Asterisk Contexts” action is idempotent; it won’t duplicate `#include mayday.d/extensions_mayday_contexts.conf` in `extensions.conf`.
 
-**Source**: AMI command `pjsip show endpoints`  
-**Checked via**: `agentStatusService.getPJSIPEndpoints()`
+## Quick Start
 
-**Why Priority 3**: Endpoints that are configured in Asterisk but have no active contact or session are marked as `registered` rather than `online`. This indicates the agent is set up but not currently connected.
+### Prerequisites
 
-**Status Determination**:
+- Node.js 16+
+- MySQL 8.0+
+- npm or yarn
 
-- Endpoint exists in Asterisk configuration → Agent is `registered`
-- Provides Asterisk status text (e.g., "Not in use", "In use")
+### 1. Clone and Setup
 
-### Queue-Specific Availability
-
-Separate from online/offline status, the system tracks **queue-specific availability** through AMI events:
-
-**Source**: AMI events (`QueueMemberStatus`, `QueueMemberPause`, `QueueMemberUnpause`)  
-**Tracked via**: Real-time event listeners in `agentStatusService`
-
-**Queue Status Codes** (from Asterisk device state):
-
-- `1` = **Available** (AST_DEVICE_NOT_INUSE) - Agent is free and can receive calls
-- `2` = **In Use** (AST_DEVICE_INUSE) - Agent is on a call
-- `3` = **Busy** (AST_DEVICE_BUSY) - Agent is busy (manual status or multiple calls)
-- `4` = **Invalid** (AST_DEVICE_INVALID) - Invalid device state
-- `5` = **Unavailable** (AST_DEVICE_UNAVAILABLE) - Agent is unavailable
-- `6` = **Ringing** (AST_DEVICE_RINGING) - Agent's phone is ringing
-- `7` = **On Hold** (AST_DEVICE_ONHOLD) - Agent has call on hold
-
-**Additional Queue Metrics**:
-
-- `paused`: Boolean indicating if agent is paused from receiving queue calls
-- `pauseReason`: Reason for pause (e.g., "Break", "Lunch", "Training")
-- `callsTaken`: Total calls taken by this queue member
-- `lastCall`: Timestamp of last call handled
-
-### Real-Time Updates
-
-The system provides real-time status updates through two mechanisms:
-
-#### 1. AMI Event Listeners (Immediate)
-
-Event-driven updates for instant status changes:
-
-```javascript
-// Contact status events (registration changes)
-amiClient.on("ContactStatus", updateFromContactEvent);
-amiClient.on("ContactStatusDetail", updateFromContactEvent);
-
-// Queue member events (availability changes)
-amiClient.on("QueueMemberStatus", handleQueueMemberStatus);
-amiClient.on("QueueMemberPause", handleQueueMemberPause);
-amiClient.on("QueueMemberUnpause", handleQueueMemberUnpause);
+```bash
+git clone <repository-url>
+cd hugamara
 ```
 
-#### 2. Periodic Polling (Every 15 seconds)
+### 2. Environment Configuration
 
-Fallback mechanism to catch missed events and ensure consistency:
+#### Backend (.env)
 
-```javascript
-const pollFrequency = 15000; // 15 seconds
+```bash
+cd backend
+cp .env.example .env
+# Edit .env with your database credentials
 ```
 
-Polling aggregates all data sources and broadcasts updates via WebSocket to all connected dashboard clients.
+#### Frontend (.env)
 
-### Combined Status Example
-
-An agent's complete status includes data from all sources:
-
-```json
-{
-  "extension": "1005",
-  "username": "john.doe",
-  "fullName": "John Doe",
-  "status": "online", // Priority 1-3: Overall connectivity
-  "sessionActive": true, // Priority 1: Client session exists
-  "clientType": "electron_softphone", // From session
-  "ip": "102.214.151.191", // From session or contact
-  "port": 57467, // From contact
-  "transport": "websocket", // From contact
-  "lastSeen": "2025-10-01T10:30:45Z",
-  "queueStatus": "available", // From queue events
-  "paused": false, // From queue events
-  "pauseReason": null,
-  "callsTaken": 15, // From queue events
-  "queues": ["support", "sales"] // From queue events
-}
+```bash
+cd client
+cp .env.example .env
+# The default API URL is http://localhost:8000/api
 ```
 
-### Summary: Source of Truth
+### 3. Install Dependencies
 
-| Status Type            | Source of Truth    | Fallback                        | Update Method                |
-| ---------------------- | ------------------ | ------------------------------- | ---------------------------- |
-| **Online/Offline**     | Client Session DB  | PJSIP Contact → Endpoint Config | Session heartbeats + Polling |
-| **Queue Availability** | AMI Queue Events   | Polling queue status            | Real-time AMI events         |
-| **Call State**         | AMI Channel Events | CDR records                     | Real-time AMI events         |
-| **Registration**       | PJSIP Contacts     | Endpoint configuration          | AMI events + Polling         |
+```bash
+# Install root dependencies
+npm install
 
-**Key Principle**: The system uses a **defense in depth** approach with multiple redundant data sources, ensuring agent status remains accurate even if individual components (database, AMI, sessions) experience issues.
+# Install backend dependencies
+npm run backend:install
 
-## 📞 Outbound Dialing: Default DID, DID Inventory, and Helper Context
-
-- Default DID per agent: Stored in `users.callerid` and editable in the dashboard (Agents → Voice → “Default DID (no‑prefix CLI)”). No‑prefix calls will use this DID unless an explicit route overrides it.
-- DID Inventory (DB): Table `did_inventory` contains your outlet DIDs and metadata (outlet name, allow_inbound/outbound, etc.). The dashboard uses it to populate DID dropdowns (endpoint: `/api/users/inbound_route/dids`).
-- File-based helper: Asterisk dialplan defines `outbound-dial` in your file include. It receives `${ARG1}` = destination, `${ARG2}` = DID and:
-  - Sets `CALLERID(num)` and `CALLERID(name)` from `${ARG2}`
-  - Dials `PJSIP/${ARG1}@Hugamara_Trunk`
-- Usage patterns:
-  - Prefix dialing (recommended for ad‑hoc DID choice): agents dial 2‑digit prefix (43–49) + number; the file dialplan forces the corresponding DID and jumps into `outbound-dial`.
-  - No‑prefix dialing (fixed/default): the helper uses the agent’s `DEFAULT_DID` (from endpoint) or a UI route can set a specific DID via a “Set CALLERID(all)=...” prior to the Dial.
-
-## 🧭 Contexts
-
-- Per‑agent context selection is no longer used in the UI. Agents are provisioned into standard contexts server‑side; the Agent Edit form does not expose context.
-- The file include `extensions_mayday_context.conf` is the single source of truth for outbound logic (prefixes and `outbound-dial`). The server does not auto‑generate this context to avoid conflicts.
-
-## 🖥️ Dashboard Workflows
-
-### Set Default DID per Agent
-
-1. Agents → select agent → Voice tab
-2. “Default DID (no‑prefix CLI)” → choose from dropdown (pulled from `did_inventory`)
-3. Save (writes `users.callerid`)
-
-### Configure a Fixed Outbound Route (optional)
-
-Use when you want a route that always presents one DID without agent prefixes.
-
-1. Voice → Outbound Routes → Edit (or Create)
-2. Actions tab → drag “Outbound Dial” into the flow
-3. In the dialog:
-   - Trunk: `Hugamara_Trunk`
-   - Caller ID (DID): select from dropdown (labels like `LaCueva (0323300245)`)
-   - Prefix: leave blank unless provider needs a prepend
-4. Save. The UI auto‑inserts a “Custom → Set CALLERID(all)="<DID> <DID>"” immediately above Dial, mirroring the helper’s behavior
-
-Notes:
-
-- You don’t need a UI Outbound Route for prefix use cases; the file dialplan already handles 43–49.
-- For per‑agent defaults (no prefix), setting `users.callerid` is enough; no UI route is required.
-
-## 🔌 API Endpoints (DID Dropdown)
-
-- List DIDs (inventory first, fallback to inbound routes):
-  - `GET /api/users/inbound_route/dids` → `[{ did: "0323300245", label: "LaCueva (0323300245)" }, ...]`
-
-## ✅ Verification
-
-On the PBX:
-
-- Reload dialplan after editing your file include:
-  - `asterisk -rx 'dialplan reload'`
-- Show helper context:
-  - `asterisk -rx 'dialplan show outbound-dial'`
-- Quick call test flow (agent 1009):
-  - No prefix: expect `Gosub(outbound-dial,s,1(0700...,<DEFAULT_DID>))`
-  - Prefix 45: expect `Gosub(outbound-dial,s,1(0700...,0323300245))`
-
-## 🧪 Troubleshooting Outbound Calls
-
-Symptoms: `Everyone is busy/congested` immediately after Dial.
-
-Checklist:
-
-1. Endpoint name matches dial string:
-   - Dial uses `PJSIP/${ARG1}@Hugamara_Trunk` → endpoint id must be `Hugamara_Trunk`.
-2. Registration/peer status:
-   - Registration: `asterisk -rx 'pjsip show registrations'` → Status: Registered
-   - Peer/IP: `pjsip show endpoint Hugamara_Trunk` → AOR Contacts > 0, `pjsip show identify` matches provider IP
-3. Number format:
-   - Some providers require E.164 (e.g., `256700…`). Add a Prefix in the Outbound Dial dialog to prepend country code
-4. See actual SIP error:
-   - `asterisk -rx 'pjsip set logger on'` → place call → check 403/404/480 codes from provider
-
-Provider requirements:
-
-- Ensure trunk has `send_pai=yes` and `send_rpid=yes` so the asserted CLI is honored.
-- Provider must allow the DID you present as CLI.
-
-## 🔊 Troubleshooting WebRTC Audio (Electron/Chrome Softphone)
-
-### Issue: One-Way Audio in Electron Softphone
-
-**Symptoms:**
-
-- **Electron app**: You can hear the remote party, but they can't hear you
-- **Chrome extension**: Audio works perfectly both ways
-- Calls connect successfully but audio is unidirectional
-- Console shows track events but audio doesn't play
-
-**Root Cause:**
-
-The Electron app's `sipService.js` was missing critical audio handling mechanisms that the Chrome extension had. Key differences:
-
-1. **Track Event Handling**: Incomplete track event processing
-2. **MediaStream Creation**: Not creating streams from track events properly
-3. **Audio Element Management**: Missing proper audio element setup and configuration
-4. **ICE Connection Recovery**: No audio stream recovery when ICE connection completes
-5. **Autoplay Error Handling**: Missing user interaction fallback for autoplay restrictions
-
-**Solution: Enhanced Audio Handling in Electron App**
-
-The following fixes were implemented in `mayday/electron-softphone/src/services/sipService.js`:
-
-#### 1. Enhanced Track Event Handling
-
-```javascript
-// In setupCallSession(session) - existing sessionDescriptionHandler check
-pc.addEventListener("track", async (event) => {
-  console.log("🎵 Received track event (existing handler):", {
-    kind: event.track.kind,
-    id: event.track.id,
-    readyState: event.track.readyState,
-    enabled: event.track.enabled,
-    muted: event.track.muted,
-    streamCount: event.streams?.length || 0,
-  });
-
-  if (event.track.kind === "audio") {
-    state.eventEmitter.emit("track:added", event);
-    try {
-      console.log("🔊 Setting up incoming audio track (existing handler)");
-      await handleAudioTrack(event);
-    } catch (error) {
-      console.error("❌ Error handling audio track (existing handler):", error);
-    }
-  }
-});
+# Install frontend dependencies
+npm run client:install
 ```
 
-#### 2. Improved MediaStream Creation
+### 4. Database Setup
 
-```javascript
-async function handleAudioTrack(event) {
-  // Create stream from track event - similar to chrome extension
-  let stream;
-  if (event.streams && event.streams.length > 0) {
-    stream = event.streams[0];
-    console.log("🎵 Using stream from track event");
-  } else {
-    console.log("🎵 Creating new stream from track");
-    stream = new MediaStream([event.track]);
-  }
-
-  // Ensure audio element exists and is properly configured
-  if (!state.audioElement) {
-    state.audioElement = document.createElement("audio");
-    state.audioElement.id = "sipjs-remote-audio";
-    state.audioElement.autoplay = true;
-    state.audioElement.controls = false;
-    state.audioElement.style.display = "none";
-    state.audioElement.volume = 0.8; // Set reasonable volume like chrome extension
-    state.audioElement.preload = "auto";
-    document.body.appendChild(state.audioElement);
-  }
-
-  // Force proper audio settings
-  state.audioElement.muted = false;
-  state.audioElement.volume = 0.8;
-
-  // Set the stream
-  if (state.audioElement.srcObject !== stream) {
-    state.audioElement.srcObject = stream;
-  } else {
-    // Make sure all tracks are enabled
-    stream.getTracks().forEach((track) => {
-      track.enabled = true;
-    });
-  }
-
-  // Play with autoplay error handling
-  const playPromise = state.audioElement.play();
-  if (playPromise !== undefined) {
-    playPromise
-      .then(() => {
-        console.log("✅ Remote audio playback started successfully");
-        setupAudioMonitoring(stream);
-      })
-      .catch((error) => {
-        console.error("❌ Remote audio autoplay blocked:", error.message);
-
-        // Handle autoplay restrictions like chrome extension
-        if (error.name === "NotAllowedError") {
-          // Create visible notification for user to enable audio
-          const notification = document.createElement("div");
-          notification.id = "audio-enable-notification";
-          notification.innerHTML = `
-            <div style="
-              position: fixed; top: 50px; right: 20px;
-              background: #007bff; color: white; padding: 15px 20px;
-              border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-              z-index: 10000; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-              font-size: 14px; cursor: pointer; max-width: 300px;
-            ">
-              🔊 Click here to enable call audio
-              <div style="font-size: 11px; opacity: 0.9; margin-top: 5px;">
-                Browser blocked audio - click to activate
-              </div>
-            </div>
-          `;
-
-          const enableAudio = () => {
-            state.audioElement
-              .play()
-              .then(() => {
-                console.log("✅ Audio enabled after user interaction");
-                notification.remove();
-              })
-              .catch((err) => {
-                console.error("❌ Still failed to enable audio:", err);
-              });
-          };
-
-          notification.addEventListener("click", enableAudio);
-          document.body.appendChild(notification);
-
-          // Auto-remove notification after 10 seconds
-          setTimeout(() => {
-            if (notification.parentNode) {
-              notification.remove();
-            }
-          }, 10000);
-        }
-      });
-  }
-}
+```bash
+# Setup database and seed data
+npm run db:setup
 ```
 
-#### 3. ICE Connection State Audio Recovery
+### 5. Callcenter System Setup
 
-```javascript
-// In setupCallSession(session) - ICE connection state change handler
-pc.addEventListener("iceconnectionstatechange", () => {
-  console.log("🧊 ICE connection state changed:", pc.iceConnectionState);
+```bash
+# Install callcenter dependencies
+cd mayday/slave-backend
+npm install
 
-  if (
-    pc.iceConnectionState === "connected" ||
-    pc.iceConnectionState === "completed"
-  ) {
-    console.log("🧊 ICE connected - checking for audio streams");
+cd ../mayday-client-dashboard
+npm install
 
-    // Check for remote streams
-    const remoteStreams = pc.getRemoteStreams();
-    console.log("🧊 Remote streams found:", remoteStreams.length);
-
-    if (remoteStreams.length > 0) {
-      const audioStream = remoteStreams.find(
-        (stream) => stream.getAudioTracks().length > 0
-      );
-
-      if (audioStream) {
-        console.log("🧊 Found audio stream, setting up playback");
-        playRemoteAudio(audioStream);
-      }
-    } else {
-      // Fallback: create stream from receivers
-      console.log("🧊 No remote streams, checking receivers");
-      const receivers = pc.getReceivers();
-      const audioReceivers = receivers.filter(
-        (r) =>
-          r.track && r.track.kind === "audio" && r.track.readyState === "live"
-      );
-
-      if (audioReceivers.length > 0) {
-        console.log("🧊 Found audio receivers, creating stream");
-        const stream = new MediaStream(audioReceivers.map((r) => r.track));
-        playRemoteAudio(stream);
-      }
-    }
-  }
-});
+# Setup callcenter database (creates emails table)
+cd ../slave-backend
+node -e "
+import { Sequelize } from 'sequelize';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env' });
+const sequelize = new Sequelize(process.env.DB_NAME || 'asterisk', process.env.DB_USER || 'root', process.env.DB_PASSWORD || '', { host: process.env.DB_HOST || 'localhost', port: process.env.DB_PORT || 3306, dialect: 'mysql', logging: false });
+(async () => {
+  await sequelize.authenticate();
+  await sequelize.query(\`CREATE TABLE IF NOT EXISTS emails (
+    id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    messageId VARCHAR(255) UNIQUE,
+    threadId CHAR(36),
+    inReplyTo VARCHAR(255),
+    \`references\` JSON,
+    \`from\` VARCHAR(255) NOT NULL,
+    \`to\` JSON NOT NULL,
+    cc JSON,
+    bcc JSON,
+    subject VARCHAR(255) NOT NULL,
+    body LONGTEXT NOT NULL,
+    htmlBody LONGTEXT,
+    status ENUM('draft', 'sent', 'delivered', 'failed', 'bounced', 'opened', 'replied') DEFAULT 'draft',
+    priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal',
+    attachments JSON DEFAULT (JSON_ARRAY()),
+    metadata JSON DEFAULT (JSON_OBJECT()),
+    userId CHAR(36) NOT NULL,
+    agentId CHAR(36),
+    customerId CHAR(36),
+    ticketId CHAR(36),
+    isRead BOOLEAN DEFAULT FALSE,
+    isStarred BOOLEAN DEFAULT FALSE,
+    isArchived BOOLEAN DEFAULT FALSE,
+    isDeleted BOOLEAN DEFAULT FALSE,
+    sentAt DATETIME,
+    receivedAt DATETIME,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deletedAt DATETIME,
+    INDEX idx_emails_userId (userId),
+    INDEX idx_emails_agentId (agentId),
+    INDEX idx_emails_status (status),
+    INDEX idx_emails_priority (priority),
+    INDEX idx_emails_threadId (threadId),
+    INDEX idx_emails_messageId (messageId),
+    INDEX idx_emails_isDeleted (isDeleted),
+    INDEX idx_emails_createdAt (createdAt),
+    INDEX idx_emails_from (\`from\`)
+  )\`);
+  console.log('✅ Emails table created successfully!');
+  await sequelize.close();
+})().catch(e => { console.error('❌ Error:', e.message); process.exit(1); });
+"
 ```
 
-#### 4. Dedicated Audio Playback Function
+#### Manual Database Migrations
 
-```javascript
-function playRemoteAudio(stream) {
-  console.log("🎵 Setting up remote audio playback");
+If you encounter database schema issues or need to run migrations manually:
 
+**For Development Environment:**
+
+```bash
+# Navigate to backend directory
+cd backend
+
+# Run migrations using Node.js directly (if npx is not available)
+node -e "
+const { sequelize } = require('./config/database-cli.cjs');
+const fs = require('fs');
+const path = require('path');
+
+async function runMigrations() {
   try {
-    // Find or create audio element
-    let audioElement = document.getElementById("sipjs-remote-audio");
+    console.log('🔄 Running database migrations...');
 
-    if (!audioElement) {
-      audioElement = document.createElement("audio");
-      audioElement.id = "sipjs-remote-audio";
-      audioElement.autoplay = true;
-      audioElement.controls = false;
-      audioElement.style.display = "none";
-      audioElement.volume = 0.8;
-      audioElement.preload = "auto";
-      document.body.appendChild(audioElement);
-    }
+    // List of migration files to run
+    const migrations = [
+      '20250115000000-add-department-id-to-staff.cjs',
+      '20250115000001-create-departments-table.cjs',
+      '20250115000002-add-name-fields-to-staff.cjs',
+      '20250115000003-add-missing-ticket-columns.cjs'
+    ];
 
-    if (audioElement.srcObject !== stream) {
-      audioElement.srcObject = stream;
-
-      // Force audio element to load and play
-      const playPromise = audioElement.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            console.log("✅ Remote audio playback started successfully");
-          })
-          .catch((error) => {
-            console.error("❌ Remote audio autoplay blocked:", error.message);
-          });
+    for (const migrationFile of migrations) {
+      try {
+        const migrationPath = path.join(__dirname, 'database/migrations', migrationFile);
+        if (fs.existsSync(migrationPath)) {
+          const migration = require(migrationPath);
+          await migration.up(sequelize.getQueryInterface(), sequelize.constructor);
+          console.log(\`✅ Migration \${migrationFile} completed\`);
+        }
+      } catch (error) {
+        if (error.message.includes('already exists') || error.message.includes('Duplicate')) {
+          console.log(\`⚠️  Migration \${migrationFile} already applied\`);
+        } else {
+          throw error;
+        }
       }
     }
 
-    // Monitor audio tracks
-    const audioTracks = stream.getAudioTracks();
-    audioTracks.forEach((track, index) => {
-      track.onended = () => console.log(`🎵 Audio track ${index} ended`);
-      track.onmute = () => console.log(`🔇 Audio track ${index} muted`);
-      track.onunmute = () => console.log(`🔊 Audio track ${index} unmuted`);
-    });
+    console.log('✅ All migrations completed successfully!');
+    process.exit(0);
   } catch (error) {
-    console.error("❌ Error setting up remote audio:", error);
+    console.error('❌ Migration failed:', error);
+    process.exit(1);
   }
 }
+
+runMigrations();
+"
+
+# Alternative: Run individual migration scripts
+node run-ticket-migration.cjs  # For ticket columns
 ```
 
-### Issue: No Ringback Tone on Outbound Calls
+### Ticket Enhancements Migration (Support Tickets)
 
-**Symptoms:**
+This project adds new fields to `tickets` and a new `ticket_history` table to support creator/assignee tracking, escalation, SLA, and an audit timeline. If you see errors like `Unknown column 'Ticket.created_by'` or joins failing on `escalated_to`, run the migration below.
 
-- Outbound calls connect successfully
-- Call audio works once answered
-- **No ringback tone** (silence) while call is ringing
-- Asterisk RTP debug shows packets being sent to client
-- Browser/Electron logs show "Provider stream is SILENT"
+#### What gets added
 
-**Root Cause:**
+- `tickets.created_by` (CHAR(36), NOT NULL)
+- `tickets.assigned_to` (CHAR(36), NULL)
+- `tickets.escalated_to` (CHAR(36), NULL)
+- `tickets.escalation_level` (INT, default 0)
+- `tickets.last_escalated_at` (DATETIME, NULL)
+- `ticket_history` table (audit trail of actions on a ticket)
 
-Asterisk was sending its **private IP address** (`172.31.x.x`) in ICE candidates instead of the **public IP**, preventing WebRTC clients from receiving RTP packets (early media/ringback) through NAT.
-
-**Solution: Configure RTP External Address**
-
-Edit `/etc/asterisk/rtp.conf` to include proper NAT traversal settings:
-
-```ini
-[general]
-rtpstart=10000
-rtpend=20000
-
-strictrtp=no
-dtmfmode=auto
-rtcpinterval=5000
-
-; ✅ CRITICAL: ICE Support and External Address Configuration
-icesupport=yes
-stunaddr=stun.l.google.com:19302
-externaddr=13.234.18.2           ; ← Your public IP
-directmedia=no
-bindaddr=0.0.0.0
-
-; ✅ CRITICAL: ICE Host Candidates
-ice_host_candidates=yes
-ice_nomination=aggressive
-
-; DTLS/SRTP Configuration
-dtlsenable=yes
-dtlsverify=no
-dtlssetup=actpass
-srtp_tag_32=yes
-dtlscertfile=/etc/letsencrypt/live/cs.hugamara.com/fullchain.pem
-dtlsprivatekey=/etc/letsencrypt/live/cs.hugamara.com/privkey.pem
-```
-
-**Apply Changes:**
+#### Verify current schema
 
 ```bash
-# Restart Asterisk to apply RTP configuration
-systemctl restart asterisk
-
-# Or reload RTP module (may not work for all settings)
-asterisk -rx "module reload res_rtp_asterisk"
-
-# Verify external address is set
-asterisk -rx "rtp show settings"
+# Inspect current columns
+mysql -u root -p "$DB_NAME" -e "DESCRIBE tickets;"
+mysql -u root -p "$DB_NAME" -e "SHOW TABLES LIKE 'ticket_history';"
 ```
 
-**Verify Fix:**
+#### Apply migration (development)
 
-1. **Make a test outbound call from Electron/Chrome softphone**
-2. **Check browser console for ICE logs:**
-
-   ```
-   [ICE] Connection State: checking
-   [ICE] Performing connectivity checks...
-   [ICE] Connection State: connected        ← Should show "connected"!
-   ✅ ICE connection established successfully!
-   [SIP] 🔊 Audio Level Check 1/6: avg=45.2, max=128  ← Audio data flowing!
-   ```
-
-3. **Enable RTP debug on Asterisk (optional):**
-   ```bash
-   asterisk -rvvv
-   rtp set debug on
-   # Make a call, you should see:
-   # Got RTP packet from 41.77.78.155:XXXXX
-   # Sent RTP packet to 102.214.151.191:XXXXX  ← Your client's public IP
-   rtp set debug off
-   ```
-
-**Why This Works:**
-
-- `externaddr`: Tells Asterisk to use public IP in SDP and ICE candidates
-- `ice_host_candidates=yes`: Enables ICE candidate gathering
-- `ice_nomination=aggressive`: Speeds up ICE connectivity checks
-- `stunaddr`: Allows clients to discover their public IP via STUN
-- Without these settings, Asterisk sends private IPs that clients cannot reach through NAT
-
-**Related Configuration:**
-
-Also ensure your `pjsip.conf` transport has correct NAT settings:
-
-```ini
-[transport-ws]
-type=transport
-protocol=ws
-bind=0.0.0.0:8088
-external_media_address=13.234.18.2
-external_signaling_address=13.234.18.2
-local_net=172.31.0.0/16           ; ← NOT 0.0.0.0/0 (see note below)
-
-[transport-wss]
-type=transport
-protocol=wss
-bind=0.0.0.0:8089
-external_media_address=13.234.18.2
-external_signaling_address=13.234.18.2
-local_net=172.31.0.0/16           ; ✅ CRITICAL: Define only your VPC as local
-```
-
-**⚠️ Important:** Setting `local_net=0.0.0.0/0` tells Asterisk ALL networks are "local", so it never uses external addresses. Change it to your actual private subnet (e.g., `172.31.0.0/16` for AWS VPC).
-
-### Audio Troubleshooting Checklist
-
-**For One-Way Audio Issues:**
-
-1. **Check Console Logs**: Look for `🎵`, `🔊`, `🧊` emoji logs in browser console
-2. **Verify Track Events**: Ensure `track` events are being received
-3. **Check Audio Element**: Verify `#sipjs-remote-audio` element exists and has `srcObject`
-4. **Test Autoplay**: Look for "NotAllowedError" and click the notification if it appears
-5. **ICE Connection**: Ensure ICE connection reaches "connected" state
-
-**For No Ringback Tone:**
-
-1. **Check Asterisk RTP Config**: Verify `externaddr` is set to public IP
-2. **Verify ICE Settings**: Ensure `ice_host_candidates=yes` and `ice_nomination=aggressive`
-3. **Check Transport Config**: Verify `external_media_address` in `pjsip.conf`
-4. **Test with RTP Debug**: Enable RTP debugging to see packet flow
-
-**Common Audio Issues & Solutions:**
-
-| Issue                | Symptoms                           | Solution                                            |
-| -------------------- | ---------------------------------- | --------------------------------------------------- |
-| **One-way audio**    | Can hear them, they can't hear you | Check track event handling and MediaStream creation |
-| **No ringback**      | Silence during call ringing        | Configure Asterisk `externaddr` and ICE settings    |
-| **Autoplay blocked** | Audio doesn't start automatically  | Click the notification or enable audio manually     |
-| **No audio at all**  | Complete silence                   | Check ICE connection state and audio element setup  |
-| **Audio cuts out**   | Audio starts then stops            | Check track state monitoring and error handling     |
-
-## 🛠️ Development
-
-### Available Scripts
+If `sequelize-cli` is available and you have equivalent migration files, prefer:
 
 ```bash
-# Start both services
-npm run callcenter
-
-# Install dependencies
-npm run callcenter:install
-
-# Start individual services
-npm run callcenter:backend
-npm run callcenter:frontend
+cd backend
+npm run db:migrate
 ```
 
-### Database Management
+If you do not have migration files locally, use this one-off script approach (reads DB creds from backend/.env):
 
 ```bash
-# Sync database schema
-cd mayday/slave-backend
-node scripts/sync-db.js
-
-# Check database connection
-cd mayday/slave-backend
-node -e "import('./config/sequelize.js').then(db => db.sequelize.authenticate().then(() => console.log('✅ Database connected')).catch(err => console.error('❌ Database error:', err)))"
+cd backend
+node -e "
+const { Sequelize } = require('sequelize');
+require('dotenv').config();
+const sequelize = new Sequelize(process.env.DB_NAME||'hugamara_dev',process.env.DB_USER||'root',process.env.DB_PASSWORD||'',{host:process.env.DB_HOST||'127.0.0.1',port:process.env.DB_PORT||3306,dialect:'mysql',logging:false});
+(async()=>{
+  const q = (s)=>sequelize.query(s);
+  const [cols] = await q('DESCRIBE tickets');
+  const names = cols.map(c=>c.Field);
+  if(!names.includes('created_by')){
+    await q("ALTER TABLE tickets ADD COLUMN created_by CHAR(36) NULL AFTER status");
+    const [users] = await q('SELECT id FROM users LIMIT 1');
+    if(users.length){ await q(`UPDATE tickets SET created_by='${users[0].id}' WHERE created_by IS NULL`); }
+    await q("ALTER TABLE tickets MODIFY COLUMN created_by CHAR(36) NOT NULL");
+  }
+  if(!names.includes('assigned_to')) await q("ALTER TABLE tickets ADD COLUMN assigned_to CHAR(36) NULL AFTER created_by");
+  if(!names.includes('escalated_to')) await q("ALTER TABLE tickets ADD COLUMN escalated_to CHAR(36) NULL AFTER assigned_to");
+  if(!names.includes('escalation_level')) await q("ALTER TABLE tickets ADD COLUMN escalation_level INT NOT NULL DEFAULT 0 AFTER escalated_to");
+  if(!names.includes('last_escalated_at')) await q("ALTER TABLE tickets ADD COLUMN last_escalated_at DATETIME NULL AFTER escalation_level");
+  await q(`CREATE TABLE IF NOT EXISTS ticket_history (
+    id CHAR(36) PRIMARY KEY,
+    ticket_id CHAR(36) NOT NULL,
+    action ENUM('created','status_changed','assigned','escalated','commented','priority_changed','category_changed','resolved','closed','reopened') NOT NULL,
+    old_value TEXT NULL,
+    new_value TEXT NULL,
+    performed_by CHAR(36) NOT NULL,
+    comment TEXT NULL,
+    metadata JSON NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  )`);
+  console.log('Ticket enhancements migration complete');
+  process.exit(0);
+})().catch(e=>{console.error(e);process.exit(1)});
+"
 ```
 
-#### Running Database Migrations Manually
+Note: If you hit foreign-key compatibility errors, skip adding FKs initially and add them later after verifying types (`CHAR(36)` across `tickets.id`, `users.id`, and related columns).
 
-Due to a custom programmatic setup in `config/sequelize.js`, the standard `npx sequelize-cli db:migrate` command will fail because it cannot find a `config/config.json` file.
+#### Apply migration (production)
 
-To run a migration, you must use a custom script.
+Use raw SQL on the server. Adjust DB name/credentials.
 
-**1. Create a Runner Script**
+```sql
+-- Tickets table additions (id columns are CHAR(36))
+ALTER TABLE `tickets`
+  ADD COLUMN IF NOT EXISTS `created_by` CHAR(36) NULL AFTER `status`,
+  ADD COLUMN IF NOT EXISTS `assigned_to` CHAR(36) NULL AFTER `created_by`,
+  ADD COLUMN IF NOT EXISTS `escalated_to` CHAR(36) NULL AFTER `assigned_to`,
+  ADD COLUMN IF NOT EXISTS `escalation_level` INT NOT NULL DEFAULT 0 AFTER `escalated_to`,
+  ADD COLUMN IF NOT EXISTS `last_escalated_at` DATETIME NULL AFTER `escalation_level`;
 
-Create a temporary file in the `mayday/slave-backend/` directory (e.g., `run-migration.mjs`):
+-- Backfill creator to avoid NOT NULL failures, then enforce NOT NULL
+UPDATE `tickets` SET `created_by` = (SELECT id FROM `users` LIMIT 1) WHERE `created_by` IS NULL;
+ALTER TABLE `tickets` MODIFY COLUMN `created_by` CHAR(36) NOT NULL;
 
-```javascript
-// run-migration.mjs
-import { sequelize } from "./config/sequelize.js";
+-- Ticket history table (FKs can be added later)
+CREATE TABLE IF NOT EXISTS `ticket_history` (
+  `id` CHAR(36) PRIMARY KEY,
+  `ticket_id` CHAR(36) NOT NULL,
+  `action` ENUM('created','status_changed','assigned','escalated','commented','priority_changed','category_changed','resolved','closed','reopened') NOT NULL,
+  `old_value` TEXT NULL,
+  `new_value` TEXT NULL,
+  `performed_by` CHAR(36) NOT NULL,
+  `comment` TEXT NULL,
+  `metadata` JSON NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
 
-// Use a dynamic import for the migration file, as it is a CommonJS module
-const migration = await import(
-  "./migrations/20250924180000-add-qualify-fields-to-ps-contacts.js"
+Optionally add FKs once column types are confirmed to match:
+
+```sql
+ALTER TABLE `tickets`
+  ADD CONSTRAINT `fk_tickets_created_by` FOREIGN KEY (`created_by`) REFERENCES `users`(`id`),
+  ADD CONSTRAINT `fk_tickets_assigned_to` FOREIGN KEY (`assigned_to`) REFERENCES `users`(`id`),
+  ADD CONSTRAINT `fk_tickets_escalated_to` FOREIGN KEY (`escalated_to`) REFERENCES `users`(`id`);
+
+ALTER TABLE `ticket_history`
+  ADD CONSTRAINT `fk_ticket_history_ticket_id` FOREIGN KEY (`ticket_id`) REFERENCES `tickets`(`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_ticket_history_performed_by` FOREIGN KEY (`performed_by`) REFERENCES `users`(`id`) ON DELETE CASCADE;
+```
+
+#### Post-migration verification
+
+```bash
+mysql -u root -p "$DB_NAME" -e "DESCRIBE tickets;"
+mysql -u root -p "$DB_NAME" -e "DESCRIBE ticket_history;"
+
+# Restart backend to clear stale connections
+cd backend && npm run dev
+```
+
+#### Troubleshooting
+
+- "Unknown column 'Ticket.created_by' in 'field list'": Run the migration steps above.
+- FK errors like "incompatible" or "Cannot add foreign key constraint": Ensure all related ids use `CHAR(36)` and add FKs after confirming types, or skip FKs initially.
+- Port already in use (`EADDRINUSE: 8000`): Kill the old process or restart dev servers cleanly.
+
+**For Production Environment:**
+
+When deploying to production, use the following approach:
+
+1. **Create Missing Tables:**
+
+```bash
+# On production server, run the table creation script
+mysql -u root -p hugamara_db < /home/admin/hugamara-portal/backend/create-missing-tables.sql
+```
+
+2. **Add Missing Columns:**
+
+```bash
+# Connect to MariaDB
+mysql -u root -p
+use hugamara_db;
+
+# Add missing columns for each table
+# Orders table
+ALTER TABLE `orders`
+  ADD COLUMN IF NOT EXISTS `priority` ENUM('low','normal','high','urgent') DEFAULT 'normal' AFTER `status`,
+  ADD COLUMN IF NOT EXISTS `discount_amount` DECIMAL(10,2) DEFAULT 0.00 AFTER `tax_amount`,
+  ADD COLUMN IF NOT EXISTS `payment_method` ENUM('cash','card','mobile_money','bank_transfer','voucher') DEFAULT 'cash' AFTER `payment_status`,
+  ADD COLUMN IF NOT EXISTS `special_instructions` TEXT AFTER `payment_method`,
+  ADD COLUMN IF NOT EXISTS `estimated_ready_time` DATETIME NULL AFTER `special_instructions`,
+  ADD COLUMN IF NOT EXISTS `actual_ready_time` DATETIME NULL AFTER `estimated_ready_time`,
+  ADD COLUMN IF NOT EXISTS `served_at` DATETIME NULL AFTER `actual_ready_time`,
+  ADD COLUMN IF NOT EXISTS `completed_at` DATETIME NULL AFTER `served_at`,
+  ADD COLUMN IF NOT EXISTS `cancelled_at` DATETIME NULL AFTER `completed_at`,
+  ADD COLUMN IF NOT EXISTS `cancellation_reason` TEXT AFTER `cancelled_at`,
+  ADD COLUMN IF NOT EXISTS `tags` JSON AFTER `notes`;
+
+# Reservations table
+ALTER TABLE `reservations`
+  ADD COLUMN IF NOT EXISTS `source` VARCHAR(50) NULL AFTER `status`,
+  ADD COLUMN IF NOT EXISTS `table_preference` VARCHAR(100) NULL AFTER `special_requests`,
+  ADD COLUMN IF NOT EXISTS `deposit_amount` DECIMAL(10,2) DEFAULT 0.00 AFTER `table_preference`,
+  ADD COLUMN IF NOT EXISTS `deposit_paid` BOOLEAN DEFAULT false AFTER `deposit_amount`,
+  ADD COLUMN IF NOT EXISTS `confirmation_sent` BOOLEAN DEFAULT false AFTER `deposit_paid`,
+  ADD COLUMN IF NOT EXISTS `reminder_sent` BOOLEAN DEFAULT false AFTER `confirmation_sent`,
+  ADD COLUMN IF NOT EXISTS `seated_at` DATETIME NULL AFTER `reminder_sent`,
+  ADD COLUMN IF NOT EXISTS `completed_at` DATETIME NULL AFTER `seated_at`,
+  ADD COLUMN IF NOT EXISTS `cancelled_at` DATETIME NULL AFTER `completed_at`,
+  ADD COLUMN IF NOT EXISTS `cancellation_reason` TEXT AFTER `cancelled_at`,
+  ADD COLUMN IF NOT EXISTS `tags` JSON AFTER `notes`;
+
+# Order Items table
+ALTER TABLE `order_items`
+  ADD COLUMN IF NOT EXISTS `special_instructions` TEXT AFTER `total_price`,
+  ADD COLUMN IF NOT EXISTS `preparation_start_time` DATETIME NULL AFTER `special_instructions`,
+  ADD COLUMN IF NOT EXISTS `preparation_end_time` DATETIME NULL AFTER `preparation_start_time`,
+  ADD COLUMN IF NOT EXISTS `served_at` DATETIME NULL AFTER `preparation_end_time`,
+  ADD COLUMN IF NOT EXISTS `is_comped` BOOLEAN DEFAULT false AFTER `served_at`,
+  ADD COLUMN IF NOT EXISTS `comp_reason` TEXT AFTER `is_comped`,
+  ADD COLUMN IF NOT EXISTS `allergens` TEXT AFTER `comp_reason`;
+
+# Inventory table
+ALTER TABLE `inventory`
+  ADD COLUMN IF NOT EXISTS `subcategory` VARCHAR(100) NULL AFTER `category`,
+  ADD COLUMN IF NOT EXISTS `sku` VARCHAR(50) NULL AFTER `subcategory`,
+  ADD COLUMN IF NOT EXISTS `barcode` VARCHAR(50) NULL AFTER `sku`,
+  ADD COLUMN IF NOT EXISTS `unit` VARCHAR(20) DEFAULT 'piece' AFTER `description`,
+  ADD COLUMN IF NOT EXISTS `minimum_stock` INT DEFAULT 0 AFTER `current_stock`,
+  ADD COLUMN IF NOT EXISTS `maximum_stock` INT DEFAULT 1000 AFTER `minimum_stock`,
+  ADD COLUMN IF NOT EXISTS `reorder_point` INT DEFAULT 0 AFTER `maximum_stock`,
+  ADD COLUMN IF NOT EXISTS `unit_cost` DECIMAL(10,2) DEFAULT 0.00 AFTER `reorder_point`,
+  ADD COLUMN IF NOT EXISTS `supplier_name` VARCHAR(100) NULL AFTER `unit_cost`,
+  ADD COLUMN IF NOT EXISTS `lead_time` INT DEFAULT 0 AFTER `supplier_name`,
+  ADD COLUMN IF NOT EXISTS `expiry_date` DATE NULL AFTER `lead_time`,
+  ADD COLUMN IF NOT EXISTS `is_perishable` BOOLEAN DEFAULT false AFTER `expiry_date`,
+  ADD COLUMN IF NOT EXISTS `is_active` BOOLEAN DEFAULT true AFTER `is_perishable`,
+  ADD COLUMN IF NOT EXISTS `location` VARCHAR(100) NULL AFTER `is_active`,
+  ADD COLUMN IF NOT EXISTS `notes` TEXT AFTER `location`,
+  ADD COLUMN IF NOT EXISTS `tags` JSON AFTER `notes`;
+
+# Staff table
+ALTER TABLE `staff`
+  ADD COLUMN IF NOT EXISTS `first_name` VARCHAR(50) NOT NULL AFTER `employee_id`,
+  ADD COLUMN IF NOT EXISTS `last_name` VARCHAR(50) NOT NULL AFTER `first_name`,
+  ADD COLUMN IF NOT EXISTS `phone` VARCHAR(20) NULL AFTER `last_name`,
+  ADD COLUMN IF NOT EXISTS `email` VARCHAR(100) NULL AFTER `phone`,
+  ADD COLUMN IF NOT EXISTS `address` TEXT AFTER `email`,
+  ADD COLUMN IF NOT EXISTS `emergency_contact` VARCHAR(100) NULL AFTER `address`,
+  ADD COLUMN IF NOT EXISTS `emergency_phone` VARCHAR(20) NULL AFTER `emergency_contact`,
+  ADD COLUMN IF NOT EXISTS `position` VARCHAR(100) NULL AFTER `emergency_phone`,
+  ADD COLUMN IF NOT EXISTS `salary` DECIMAL(10,2) NULL AFTER `position`,
+  ADD COLUMN IF NOT EXISTS `performance_rating` DECIMAL(3,2) DEFAULT 0.00 AFTER `salary`,
+  ADD COLUMN IF NOT EXISTS `is_active` BOOLEAN DEFAULT true AFTER `performance_rating`,
+  ADD COLUMN IF NOT EXISTS `hire_date` DATE NULL AFTER `is_active`,
+  ADD COLUMN IF NOT EXISTS `end_date` DATE NULL AFTER `hire_date`,
+  ADD COLUMN IF NOT EXISTS `termination_date` DATE NULL AFTER `hire_date`,
+  ADD COLUMN IF NOT EXISTS `department` VARCHAR(100) NULL AFTER `position`,
+  ADD COLUMN IF NOT EXISTS `hourly_rate` DECIMAL(10,2) NULL AFTER `is_active`,
+  ADD COLUMN IF NOT EXISTS `pay_frequency` ENUM('weekly','biweekly','monthly','annually') DEFAULT 'monthly' AFTER `salary`,
+  ADD COLUMN IF NOT EXISTS `skills` TEXT AFTER `emergency_phone`,
+  ADD COLUMN IF NOT EXISTS `certifications` TEXT AFTER `skills`,
+  ADD COLUMN IF NOT EXISTS `last_review_date` DATE NULL AFTER `performance_rating`,
+  ADD COLUMN IF NOT EXISTS `notes` TEXT AFTER `end_date`,
+  ADD COLUMN IF NOT EXISTS `department_id` VARCHAR(36) NULL AFTER `notes`;
+
+# Shifts table
+ALTER TABLE `shifts`
+  ADD COLUMN IF NOT EXISTS `break_start_time` TIME NULL AFTER `end_time`,
+  ADD COLUMN IF NOT EXISTS `break_end_time` TIME NULL AFTER `break_start_time`,
+  ADD COLUMN IF NOT EXISTS `shift_type` ENUM('morning','afternoon','evening','night','split') DEFAULT 'morning' AFTER `status`,
+  ADD COLUMN IF NOT EXISTS `position` VARCHAR(100) NULL AFTER `shift_type`,
+  ADD COLUMN IF NOT EXISTS `section` VARCHAR(100) NULL AFTER `position`,
+  ADD COLUMN IF NOT EXISTS `tables` JSON NULL AFTER `section`,
+  ADD COLUMN IF NOT EXISTS `clock_in_time` DATETIME NULL AFTER `tables`,
+  ADD COLUMN IF NOT EXISTS `clock_out_time` DATETIME NULL AFTER `clock_in_time`,
+  ADD COLUMN IF NOT EXISTS `actual_start_time` DATETIME NULL AFTER `clock_out_time`,
+  ADD COLUMN IF NOT EXISTS `actual_end_time` DATETIME NULL AFTER `actual_start_time`,
+  ADD COLUMN IF NOT EXISTS `total_hours` DECIMAL(4,2) DEFAULT 0.00 AFTER `actual_end_time`,
+  ADD COLUMN IF NOT EXISTS `overtime_hours` DECIMAL(4,2) DEFAULT 0.00 AFTER `total_hours`,
+  ADD COLUMN IF NOT EXISTS `notes` TEXT AFTER `overtime_hours`,
+  ADD COLUMN IF NOT EXISTS `is_approved` BOOLEAN DEFAULT false AFTER `notes`,
+  ADD COLUMN IF NOT EXISTS `approved_at` DATETIME NULL AFTER `is_approved`;
+
+# Tickets table
+ALTER TABLE `tickets`
+  ADD COLUMN IF NOT EXISTS `sla_breached` BOOLEAN DEFAULT false AFTER `status`,
+  ADD COLUMN IF NOT EXISTS `priority` ENUM('low','medium','high','urgent') DEFAULT 'medium' AFTER `sla_breached`,
+  ADD COLUMN IF NOT EXISTS `category` VARCHAR(100) NULL AFTER `priority`,
+  ADD COLUMN IF NOT EXISTS `subcategory` VARCHAR(100) NULL AFTER `category`,
+  ADD COLUMN IF NOT EXISTS `assigned_to` VARCHAR(36) NULL AFTER `subcategory`,
+  ADD COLUMN IF NOT EXISTS `reported_by` VARCHAR(36) NULL AFTER `assigned_to`,
+  ADD COLUMN IF NOT EXISTS `description` TEXT AFTER `reported_by`,
+  ADD COLUMN IF NOT EXISTS `resolution` TEXT AFTER `description`,
+  ADD COLUMN IF NOT EXISTS `resolution_time` DATETIME NULL AFTER `resolution`,
+  ADD COLUMN IF NOT EXISTS `actual_resolution_time` DATETIME NULL AFTER `resolution_time`,
+  ADD COLUMN IF NOT EXISTS `sla_deadline` DATETIME NULL AFTER `actual_resolution_time`,
+  ADD COLUMN IF NOT EXISTS `tags` JSON AFTER `sla_deadline`,
+  ADD COLUMN IF NOT EXISTS `attachments` JSON AFTER `tags`,
+  ADD COLUMN IF NOT EXISTS `is_escalated` BOOLEAN DEFAULT false AFTER `attachments`,
+  ADD COLUMN IF NOT EXISTS `escalated_at` DATETIME NULL AFTER `is_escalated`,
+  ADD COLUMN IF NOT EXISTS `escalated_to` VARCHAR(36) NULL AFTER `escalated_at`,
+  ADD COLUMN IF NOT EXISTS `customer_impact` ENUM('none','low','medium','high','critical') DEFAULT 'low' AFTER `escalated_to`,
+  ADD COLUMN IF NOT EXISTS `estimated_resolution_time` DATETIME NULL AFTER `customer_impact`,
+  ADD COLUMN IF NOT EXISTS `notes` TEXT AFTER `estimated_resolution_time`,
+  ADD COLUMN IF NOT EXISTS `location` VARCHAR(100) NULL AFTER `status`,
+  ADD COLUMN IF NOT EXISTS `sla_target` DATETIME NULL AFTER `estimated_resolution_time`,
+  ADD COLUMN IF NOT EXISTS `resolution_notes` TEXT AFTER `attachments`,
+  ADD COLUMN IF NOT EXISTS `resolved_at` DATETIME NULL AFTER `resolution_notes`,
+  ADD COLUMN IF NOT EXISTS `closed_at` DATETIME NULL AFTER `resolved_at`;
+
+# Events table
+ALTER TABLE `events`
+  ADD COLUMN IF NOT EXISTS `expected_attendance` INT DEFAULT 0 AFTER `capacity`,
+  ADD COLUMN IF NOT EXISTS `actual_attendance` INT DEFAULT 0 AFTER `expected_attendance`,
+  ADD COLUMN IF NOT EXISTS `is_ticketed` BOOLEAN DEFAULT false AFTER `actual_attendance`,
+  ADD COLUMN IF NOT EXISTS `ticket_price` DECIMAL(10,2) DEFAULT 0.00 AFTER `is_ticketed`,
+  ADD COLUMN IF NOT EXISTS `ticket_quantity` INT DEFAULT 0 AFTER `ticket_price`,
+  ADD COLUMN IF NOT EXISTS `tickets_sold` INT DEFAULT 0 AFTER `ticket_quantity`,
+  ADD COLUMN IF NOT EXISTS `budget` DECIMAL(10,2) DEFAULT 0.00 AFTER `status`,
+  ADD COLUMN IF NOT EXISTS `actual_cost` DECIMAL(10,2) DEFAULT 0.00 AFTER `budget`,
+  ADD COLUMN IF NOT EXISTS `revenue` DECIMAL(10,2) DEFAULT 0.00 AFTER `actual_cost`,
+  ADD COLUMN IF NOT EXISTS `performers` TEXT AFTER `revenue`,
+  ADD COLUMN IF NOT EXISTS `requirements` TEXT AFTER `performers`,
+  ADD COLUMN IF NOT EXISTS `marketing_plan` TEXT AFTER `requirements`,
+  ADD COLUMN IF NOT EXISTS `notes` TEXT AFTER `marketing_plan`,
+  ADD COLUMN IF NOT EXISTS `tags` JSON AFTER `notes`,
+  ADD COLUMN IF NOT EXISTS `attachments` JSON AFTER `tags`;
+
+# Outlets table
+ALTER TABLE `outlets`
+  ADD COLUMN IF NOT EXISTS `tax_rate` DECIMAL(5,2) DEFAULT 0.00 AFTER `currency`,
+  ADD COLUMN IF NOT EXISTS `service_charge` DECIMAL(5,2) DEFAULT 0.00 AFTER `tax_rate`,
+  ADD COLUMN IF NOT EXISTS `delivery_fee` DECIMAL(5,2) DEFAULT 0.00 AFTER `service_charge`,
+  ADD COLUMN IF NOT EXISTS `operating_hours` JSON AFTER `delivery_fee`,
+  ADD COLUMN IF NOT EXISTS `settings` JSON AFTER `operating_hours`;
+
+# Create roles and permissions tables
+CREATE TABLE IF NOT EXISTS `roles` (
+  `id` VARCHAR(36) PRIMARY KEY,
+  `name` VARCHAR(50) NOT NULL UNIQUE,
+  `display_name` VARCHAR(100) NOT NULL,
+  `description` TEXT,
+  `is_active` BOOLEAN DEFAULT true,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-import pkg from "sequelize";
-const { Sequelize } = pkg;
+CREATE TABLE IF NOT EXISTS `permissions` (
+  `id` VARCHAR(36) PRIMARY KEY,
+  `name` VARCHAR(100) NOT NULL UNIQUE,
+  `resource` VARCHAR(50) NOT NULL,
+  `action` VARCHAR(50) NOT NULL,
+  `description` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 
-const { up } = migration;
+CREATE TABLE IF NOT EXISTS `role_permissions` (
+  `id` VARCHAR(36) PRIMARY KEY,
+  `role_id` VARCHAR(36) NOT NULL,
+  `permission_id` VARCHAR(36) NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`permission_id`) REFERENCES `permissions`(`id`) ON DELETE CASCADE,
+  UNIQUE KEY `unique_role_permission` (`role_id`, `permission_id`)
+);
 
-async function runMigration() {
-  const queryInterface = sequelize.getQueryInterface();
-  console.log("Starting migration...");
+# Verify all tables exist
+SHOW TABLES;
+```
+
+#### Common Migration Issues
+
+**Issue**: `npx: command not found`
+
+- **Solution**: Use Node.js directly as shown above, or install npm globally
+
+**Issue**: `Unknown column 'column_name' in 'field list'`
+
+- **Solution**: Run the appropriate migration script to add missing columns
+
+**Issue**: `Cannot read properties of undefined (reading 'query')`
+
+- **Solution**: Ensure sequelize instance is properly initialized in migration scripts
+
+**Issue**: `Unknown column 'tax_rate' in 'field list'` (Settings module)
+
+- **Solution**: Run `node run-settings-migration.cjs` to add outlet columns
+
+**Issue**: `Permission is not associated to Role!` (Settings module)
+
+- **Solution**: Run `node run-settings-migration.cjs` to create role_permissions junction table
+
+#### Creating New Migrations
+
+When you need to create a new migration:
+
+```bash
+# Navigate to backend directory
+cd backend
+
+# Create a new migration file manually
+touch database/migrations/YYYYMMDDHHMMSS-description.cjs
+
+# Example migration template:
+cat > database/migrations/YYYYMMDDHHMMSS-description.cjs << 'EOF'
+'use strict';
+
+/** @type {import('sequelize-cli').Migration} */
+module.exports = {
+  async up(queryInterface, Sequelize) {
+    try {
+      // Add your migration logic here
+      await queryInterface.addColumn('table_name', 'column_name', {
+        type: Sequelize.STRING,
+        allowNull: true,
+        comment: 'Column description'
+      });
+      console.log('✅ Added column_name to table_name');
+    } catch (error) {
+      if (error.message.includes('Duplicate column name')) {
+        console.log('⚠️  column_name already exists');
+      } else {
+        throw error;
+      }
+    }
+  },
+
+  async down(queryInterface, Sequelize) {
+    try {
+      await queryInterface.removeColumn('table_name', 'column_name');
+      console.log('✅ Removed column_name from table_name');
+    } catch (error) {
+      console.log(`⚠️  Column may not exist: ${error.message}`);
+    }
+  }
+};
+EOF
+```
+
+#### Migration Best Practices
+
+1. **Always test migrations** on a development database first
+2. **Use try-catch blocks** to handle duplicate column/table errors gracefully
+3. **Include rollback logic** in the `down` method
+4. **Use descriptive names** for migration files
+5. **Add comments** to explain what each migration does
+6. **Test both up and down** migrations
+
+## Debugging Guide
+
+### Common Issues and Solutions
+
+#### 1. "Table not found" Error in Seat Reservation
+
+**Problem**: When trying to assign a table to a reservation, you get a 404 "Table not found" error.
+
+**Root Cause**: The backend is enforcing strict `outletId` matching between user, reservation, and table, but these might not be properly aligned.
+
+**Debugging Steps**:
+
+1. **Check Database State**:
+
+```bash
+# Create a debug script
+cat > backend/debug-tables.mjs << 'EOF'
+import { sequelize } from "./config/database.js";
+import { Table, Outlet, Reservation } from "./models/index.js";
+
+async function debugTables() {
   try {
-    await up(queryInterface, Sequelize);
-    console.log("Migration completed successfully.");
+    console.log("Checking tables and outlets...");
+
+    // Check outlets
+    const outlets = await Outlet.findAll();
+    console.log("Outlets:", outlets.map(o => ({ id: o.id, name: o.name })));
+
+    // Check tables
+    const tables = await Table.findAll();
+    console.log("Tables:", tables.map(t => ({
+      id: t.id,
+      tableNumber: t.tableNumber,
+      outletId: t.outletId,
+      status: t.status,
+      isActive: t.isActive
+    })));
+
+    // Check reservations
+    const reservations = await Reservation.findAll();
+    console.log("Reservations:", reservations.map(r => ({
+      id: r.id,
+      outletId: r.outletId,
+      status: r.status
+    })));
+
   } catch (error) {
-    console.error("Migration failed:", error);
-    process.exit(1);
+    console.error("Error:", error.message);
   } finally {
     await sequelize.close();
   }
 }
 
-runMigration();
+debugTables();
+EOF
+
+# Run the debug script
+cd backend && node debug-tables.mjs
 ```
 
-**2. Run the Script**
-
-Execute the script from within the `mayday/slave-backend` directory on the server:
+2. **Check User's OutletId**:
 
 ```bash
-node --experimental-specifier-resolution=node run-migration.mjs
+# Add temporary logging to see user's outletId
+# In reservationController.js, add:
+console.log('User outletId:', req.user.outletId);
 ```
 
-**3. Reliable Fallback: Direct SQL**
+3. **Fix the Issue**:
 
-If Node.js scripting fails due to environment issues, the most reliable method is to apply the change with a direct SQL command.
+The issue is usually that the user doesn't have an `outletId` set, or the reservation/table has a different `outletId`. Here are the proper solutions:
 
-```bash
-# Example for adding a column
-ssh -i <your-key.pem> admin@<your-server-ip> "sudo mysql -uroot asterisk -e \"ALTER TABLE ps_contacts ADD COLUMN qualify_2xx_only ENUM('yes', 'no') NOT NULL DEFAULT 'no';\""
-```
-
-#### Troubleshooting: ER_TOO_MANY_KEYS (Duplicate Indexes)
-
-If you encounter the error `ER_TOO_MANY_KEYS (1069): Too many keys specified; max 64 keys allowed` during database sync, it means a table has accumulated duplicate unique indexes from repeated syncs with older model definitions. This has been observed on `dialplan_contexts` (`name` column) and `client_session` (`session_token` column).
-
-**Fix (run on the VM as root):**
-
-```bash
-# This script drops all extra indexes on the specified column and ensures a single, named unique index exists.
-# --- Fix for dialplan_contexts ---
-DB=asterisk
-TBL=dialplan_contexts
-COL=name
-mysql -uroot -N -e "SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA='${DB}' AND TABLE_NAME='${TBL}' AND COLUMN_NAME='${COL}' AND INDEX_NAME NOT IN ('PRIMARY', 'ux_${TBL}_${COL}');" | while read idx; do
-  if [ -n "$idx" ]; then
-    echo "Dropping index: $idx from ${TBL}"
-    mysql -uroot "$DB" -e "ALTER TABLE ${TBL} DROP INDEX \`$idx\`"
-  fi
-done
-mysql -uroot "${DB}" -e "CREATE UNIQUE INDEX ux_${TBL}_${COL} ON ${TBL} (${COL});" || echo "Index on ${TBL} already exists or failed."
-
-# --- Fix for client_session ---
-TBL=client_session
-COL=session_token
-mysql -uroot -N -e "SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA='${DB}' AND TABLE_NAME='${TBL}' AND COLUMN_NAME='${COL}' AND INDEX_NAME <> 'PRIMARY';" | while read idx; do
-  if [ -n "$idx" ]; then
-    echo "Dropping index: $idx from ${TBL}"
-    mysql -uroot "$DB" -e "ALTER TABLE ${TBL} DROP INDEX \`$idx\`"
-  fi
-done
-mysql -uroot "${DB}" -e "CREATE UNIQUE INDEX ux_${TBL}_${COL} ON ${TBL} (${COL}(255));" || echo "Index on ${TBL} already exists or failed."
-
-# Verify final indexes
-echo "--- Final indexes for dialplan_contexts ---"
-mysql -uroot "${DB}" -e "SHOW INDEX FROM dialplan_contexts;"
-echo "--- Final indexes for client_session ---"
-mysql -uroot "${DB}" -e "SHOW INDEX FROM client_session;"
-```
-
-### Asterisk Configuration
-
-The system includes scripts to configure Asterisk on your EC2 server:
-
-```bash
-# On EC2 server
-sudo ./mayday/slave-backend/scripts/setup-asterisk-config.sh
-```
-
-## 🔐 Security
-
-### Authentication
-
-- JWT-based authentication for API access
-- Session management via Redis
-- Role-based access control (Admin, Agent, Manager)
-
-### Network Security
-
-- AMI access restricted to specific IP ranges
-- HTTPS support for production deployments
-- CORS configuration for cross-origin requests
-
-### External Integrations
-
-#### Trunk Provider Integration
-
-The call center system integrates with external trunk providers for call validation and account management:
-
-**Configuration:**
-
-- **Auth Header**: Base64 encoded credentials for API authentication
-- **Validate URL**: Endpoint for account balance and validation checks
-- **Environment Variables**: Configured in both development (.env) and production (ecosystem.config.js)
-
-**Usage Example:**
-
-```bash
-curl --location 'https://ug.cyber-innovative.com:444/cyber-api/cyber_validate.php' \
---header 'Content-Type: application/x-www-form-urlencoded' \
---header 'Authorization: Basic MDMyMDAwMDAwODoxMy4yMzQuMTguMg==' \
---data-urlencode 'account=0320000008' \
---data-urlencode 'BALANCE=BALANCE'
-```
-
-**Environment Configuration:**
-
-- **Development**: Set in `mayday/slave-backend/.env`
-- **Production**: Set in `ecosystem.config.js` for PM2 management
-
-**API Integration:**
+**Option A: Ensure User Has Correct OutletId**
 
 ```javascript
-// In your backend code
-const authHeader = process.env.TRUNK_PROVIDER_AUTH_HEADER;
-const validateUrl = process.env.TRUNK_PROVIDER_VALIDATE_URL;
-
-const response = await fetch(validateUrl, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/x-www-form-urlencoded",
-    Authorization: `Basic ${authHeader}`,
-  },
-  body: new URLSearchParams({
-    account: "0320000008",
-    BALANCE: "BALANCE",
-  }),
-});
+// Check if user has outletId in auth middleware
+// In middleware/auth.js, ensure user.outletId is set correctly
 ```
 
-#### Chrome Extension Multi-Tenant Configuration
+**Option B: Fix Data Alignment**
 
-The Chrome extension supports dynamic multi-tenant configuration:
+```bash
+# Update reservation to match user's outlet
+mysql -u root -p hugamara_dev -e "
+UPDATE reservations
+SET outlet_id = '550e8400-e29b-41d4-a716-446655440001'
+WHERE id = 'reservation-id-here';
+"
 
-**Features:**
+# Update table to match user's outlet
+mysql -u root -p hugamara_dev -e "
+UPDATE tables
+SET outlet_id = '550e8400-e29b-41d4-a716-446655440001'
+WHERE id = 'table-id-here';
+"
+```
 
-- **Dynamic URL Detection**: Automatically detects current domain and generates appropriate API endpoints
-- **Tenant-Specific API Paths**: Uses `/mayday-api` for Hugamara domains, `/api` for others
-- **CORS-Friendly**: Each tenant uses their own domain, eliminating cross-origin issues
-- **No Hardcoded URLs**: All endpoints are generated dynamically based on current origin
-
-**Configuration Priority:**
-
-1. Stored host URL (from Chrome storage)
-2. Current origin (detected from window.location)
-3. Environment variables
-4. Dynamic fallback based on current origin
-
-**Usage:**
+**Option C: Temporary Bypass (NOT RECOMMENDED for production)**
 
 ```javascript
-// The extension automatically detects the current domain
-// For https://cs.hugamara.com → uses /mayday-api endpoints
-// For https://client1.example.com → uses /api endpoints
+// In reservationController.js, modify seatReservation function:
+export const seatReservation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { tableId } = req.body;
+    const userOutletId = req.user.outletId;
 
-// Health check example:
-const endpoints = await config.getDynamicEndpoints();
-const response = await fetch(endpoints.users.systemHealth, {
-  method: "GET",
-  signal: AbortSignal.timeout(5000),
-});
+    // Find reservation - require outletId matching for security
+    const reservation = await Reservation.findOne({
+      where: userOutletId ? { id, outletId: userOutletId } : { id },
+    });
+
+    if (!reservation) {
+      return res.status(404).json({ error: "Reservation not found" });
+    }
+
+    // Check if table exists and is available - require outletId matching for security
+    const table = await Table.findOne({
+      where: userOutletId
+        ? { id: tableId, outletId: userOutletId }
+        : { id: tableId },
+    });
+
+    if (!table) {
+      return res.status(404).json({ error: "Table not found" });
+    }
+
+    // Rest of the function...
+  } catch (error) {
+    console.error("Seat reservation error:", error);
+    res.status(500).json({ error: "Failed to seat reservation" });
+  }
+};
 ```
 
-## 📩 SMS Integration
-
-The Call Center now supports outbound SMS via an external provider and a built-in UI in the Electron softphone.
-
-### Provider
-
-- Default provider: Cyber Innovative SMS
-- Base URL: `https://sms.cyber-innovative.com/secure`
-- Optional Override IP (when DNS fails): `41.77.78.156`
-
-### Backend Configuration (Production)
-
-Add these variables to the `mayday-callcenter-backend` app in `ecosystem.config.js`:
-
-```js
-// SMS Provider Configuration
-SMS_PROVIDER_BASE_URL: "https://sms.cyber-innovative.com/secure",
-SMS_PROVIDER_OVERRIDE_IP: "41.77.78.156",     // optional; for DNS issues
-SMS_PROVIDER_STRICT_TLS: "false",             // "true" if NOT using override IP
-// Use either USER/PASS or AUTH header (prefer user/pass)
-SMS_PROVIDER_USERNAME: "medhi",
-SMS_PROVIDER_PASSWORD: "Lusuku@#2025!",
-// Alternatively:
-// SMS_PROVIDER_AUTH: "Basic bWVkaGk6THVzdWt1QCMyMDI1IQ==",
-SMS_DEFAULT_SENDER: "Hugamara",
-SMS_DLR_URL: "https://cs.hugamara.com/api/sms/dlr",
-```
-
-Notes:
-
-- Use one authentication method only: Username/Password, or `SMS_PROVIDER_AUTH`.
-- If DNS works on the server, omit `SMS_PROVIDER_OVERRIDE_IP` and set `SMS_PROVIDER_STRICT_TLS` to `"true"`.
-
-### Backend Configuration (Development)
-
-- Dashboard API client points to `http://localhost:8004/api` automatically when accessed on `localhost`.
-- Delivery Report (DLR) URL in dev: `http://localhost:8004/api/sms/dlr`.
-
-### Runtime Configuration (Dashboard)
-
-You can configure the provider at runtime in the Call Center Dashboard:
-
-- Navigate: `Integrations → SMS`
-- Fields:
-  - Base URL
-  - Override IP (optional)
-  - Strict TLS (enable if no Override IP)
-  - Auth Header (Basic ...) or Username/Password
-  - Default Sender
-  - DLR URL (dev/prod values above)
-- Actions:
-  - Save Configuration
-  - Check Balance
-
-Internally, the runtime config is stored in Redis (`key: sms_provider_config`). If this key exists, it overrides environment variables. To revert to env values in production:
+4. **Clean Up**:
 
 ```bash
-redis-cli DEL sms_provider_config
-pm2 restart mayday-callcenter-backend
+# Remove debug files
+rm backend/debug-tables.mjs
 ```
 
-### API Endpoints (Backend)
+#### 2. Dialog Boxes Being Covered by Header
 
-- `POST /api/sms/send` — Send an SMS
-- `GET  /api/sms/balance` — Provider balance (admin)
-- `GET  /api/sms/providers` — Provider metadata (admin)
-- `GET  /api/sms/config` — Get current configuration (admin)
-- `PUT|POST /api/sms/config` — Update runtime configuration (admin)
-- `POST /api/sms/dlr` — Delivery Report webhook (public)
-- `GET  /api/sms/conversations` — List SMS conversations (latest per partner)
-- `GET  /api/sms/conversations/:phoneNumber` — Messages for a phone number
+**Problem**: Modal dialogs have their content covered by the fixed header.
 
-### cURL Examples
+**Solution**: Update all dialog z-index and positioning:
 
-Send SMS:
+```javascript
+// Change from:
+<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+
+// To:
+<div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center p-4 sm:p-6 z-[9999] overflow-y-auto">
+  <div className="bg-neutral-800 rounded-lg shadow-xl w-full max-w-2xl mt-8 sm:mt-12 mb-4 sm:mb-8 border border-neutral-700 min-h-fit max-h-[90vh] overflow-y-auto">
+    {/* Sticky Header */}
+    <div className="sticky top-0 bg-neutral-800 border-b border-neutral-700 px-6 pt-6 pb-4 rounded-t-lg z-10">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-white">Modal Title</h2>
+        <button onClick={onClose} className="text-neutral-400 hover:text-white text-3xl font-bold p-2 hover:bg-neutral-700 rounded-full transition-colors" title="Close Modal">×</button>
+      </div>
+    </div>
+    {/* Modal Content */}
+    <div className="p-6 sm:p-8 pb-8">
+      {/* Your content here */}
+    </div>
+  </div>
+</div>
+```
+
+#### 3. Reservations Dropdown Not Populating in Orders
+
+**Problem**: The reservations dropdown in Orders.js shows no options.
+
+**Solution**: Use the correct slice for reservations data:
+
+```javascript
+// In Orders.js, update imports:
+import {
+  fetchReservations,
+  selectReservations,
+} from "../store/slices/reservationsSlice";
+
+// Remove from ordersSlice imports:
+// fetchReservations, selectReservations
+
+// Update the filter to show more reservations:
+{
+  reservations
+    .filter((r) => r.status === "seated" || r.status === "confirmed")
+    .map((r) => (
+      <option key={r.id} value={r.id} className="text-gray-900">
+        {r.reservationNumber} • {r.partySize} people • {r.status}
+      </option>
+    ));
+}
+```
+
+#### 4. Database Connection Issues
+
+**Problem**: "Cannot read properties of undefined (reading 'query')" or similar database errors.
+
+**Solution**:
 
 ```bash
-curl --location 'https://sms.cyber-innovative.com/secure/send' \
-  --header 'Content-Type: application/json' \
-  --header 'Authorization: Basic bWVkaGk6THVzdWt1QCMyMDI1IQ==' \
-  --data '{
-    "to":"+256700771301",
-    "from":"Hugamara",
-    "content":"This is a test message from Hugamara Mayday",
-    "dlr":"yes",
-    "dlr-url":"https://cs.hugamara.com/api/sms/dlr",
-    "dlr-level":3
-  }'
+# Check if database is running
+mysql -u root -p -e "SELECT 1;"
+
+# Check environment variables
+cat backend/.env
+
+# Test database connection
+cd backend && node -e "
+const { sequelize } = require('./config/database-cli.cjs');
+sequelize.authenticate()
+  .then(() => console.log('✅ Database connected'))
+  .catch(err => console.error('❌ Database error:', err))
+  .finally(() => process.exit());
+"
 ```
 
-Check Balance:
+#### 5. Missing Database Columns
+
+**Problem**: "Unknown column 'column_name' in 'field list'" errors.
+
+**Solution**:
 
 ```bash
-curl --location 'https://sms.cyber-innovative.com/secure/balance' \
-  --header 'Authorization: Basic bWVkaGk6THVzdWt1QCMyMDI1IQ=='
+# Check what columns exist
+mysql -u root -p hugamara_dev -e "DESCRIBE table_name;"
+
+# Add missing columns
+mysql -u root -p hugamara_dev -e "ALTER TABLE table_name ADD COLUMN column_name VARCHAR(255) NULL;"
+
+# Or run the comprehensive migration
+mysql -u root -p hugamara_dev < backend/create-missing-tables.sql
 ```
 
-If DNS fails, temporarily resolve via IP and Host override (example):
+#### 6. Email Management System Issues
+
+**Problem**: "Table 'asterisk.emails' doesn't exist" error in callcenter system.
+
+**Solution**:
 
 ```bash
-curl --location 'https://sms.cyber-innovative.com/secure/send' \
-  --resolve 'sms.cyber-innovative.com:443:41.77.78.156' \
-  --header 'Content-Type: application/json' \
-  --header 'Authorization: Basic bWVkaGk6THVzdWt1QCMyMDI1IQ==' \
-  --data '{"to":"+256700771301","from":"Hugamara","content":"Test","dlr":"yes"}'
+# Create the emails table
+cd mayday/slave-backend
+node -e "
+import { Sequelize } from 'sequelize';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env' });
+const sequelize = new Sequelize(process.env.DB_NAME || 'asterisk', process.env.DB_USER || 'root', process.env.DB_PASSWORD || '', { host: process.env.DB_HOST || 'localhost', port: process.env.DB_PORT || 3306, dialect: 'mysql', logging: false });
+(async () => {
+  await sequelize.authenticate();
+  await sequelize.query(\`CREATE TABLE IF NOT EXISTS emails (
+    id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    messageId VARCHAR(255) UNIQUE,
+    threadId CHAR(36),
+    inReplyTo VARCHAR(255),
+    \`references\` JSON,
+    \`from\` VARCHAR(255) NOT NULL,
+    \`to\` JSON NOT NULL,
+    cc JSON,
+    bcc JSON,
+    subject VARCHAR(255) NOT NULL,
+    body LONGTEXT NOT NULL,
+    htmlBody LONGTEXT,
+    status ENUM('draft', 'sent', 'delivered', 'failed', 'bounced', 'opened', 'replied') DEFAULT 'draft',
+    priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal',
+    attachments JSON DEFAULT (JSON_ARRAY()),
+    metadata JSON DEFAULT (JSON_OBJECT()),
+    userId CHAR(36) NOT NULL,
+    agentId CHAR(36),
+    customerId CHAR(36),
+    ticketId CHAR(36),
+    isRead BOOLEAN DEFAULT FALSE,
+    isStarred BOOLEAN DEFAULT FALSE,
+    isArchived BOOLEAN DEFAULT FALSE,
+    isDeleted BOOLEAN DEFAULT FALSE,
+    sentAt DATETIME,
+    receivedAt DATETIME,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deletedAt DATETIME,
+    INDEX idx_emails_userId (userId),
+    INDEX idx_emails_agentId (agentId),
+    INDEX idx_emails_status (status),
+    INDEX idx_emails_priority (priority),
+    INDEX idx_emails_threadId (threadId),
+    INDEX idx_emails_messageId (messageId),
+    INDEX idx_emails_isDeleted (isDeleted),
+    INDEX idx_emails_createdAt (createdAt),
+    INDEX idx_emails_from (\`from\`)
+  )\`);
+  console.log('✅ Emails table created successfully!');
+  await sequelize.close();
+})().catch(e => { console.error('❌ Error:', e.message); process.exit(1); });
+"
 ```
 
-### Electron Softphone – SMS UI
+**Problem**: SMTP connection test fails.
 
-- New sidebar item: **SMS**
-- Features:
-  - List conversations (latest message per partner)
-  - View thread and send messages
-  - Messages persist to the database (`SmsMessages` table)
-  - Delivery status updates via DLR handler
+**Solution**:
 
-### Data Model
+1. **Check SMTP credentials** in `mayday/slave-backend/.env`:
 
-`SmsMessage` (MySQL):
+   ```env
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_SECURE=false
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASS=your-app-password
+   SMTP_FROM=your-email@gmail.com
+   ```
 
-- `id` (UUID, PK)
-- `providerMessageId` (string, nullable)
-- `fromNumber` (string)
-- `toNumber` (string)
-- `content` (text)
-- `direction` (`inbound` | `outbound`)
-- `status` (`queued` | `sent` | `delivered` | `failed` | `received` | `undelivered`)
-- `createdAt` / `updatedAt`
+2. **For Gmail**: Enable 2-factor authentication and generate an App Password
+3. **Test connection** using the built-in test feature in the Email Management UI
+
+**Problem**: Email Management not accessible in callcenter dashboard.
+
+**Solution**:
+
+1. **Check if callcenter is running**:
+
+   ```bash
+   cd mayday/slave-backend && npm start
+   cd mayday/mayday-client-dashboard && npm start
+   ```
+
+2. **Access the dashboard**: Navigate to `http://localhost:3001/callcenter`
+3. **Check navigation**: Look for "Email Management" in the sidebar menu
+
+### Debugging Checklist
+
+When encountering issues, follow this systematic approach:
+
+1. **Check the Error Message**: Read the full error message and stack trace
+2. **Check Database State**: Use debug scripts to verify data exists
+3. **Check API Endpoints**: Test endpoints with tools like Postman or curl
+4. **Check Frontend Console**: Look for JavaScript errors or network failures
+5. **Check Backend Logs**: Monitor server console for error messages
+6. **Check Environment Variables**: Ensure all required env vars are set
+7. **Check Database Connection**: Verify database is running and accessible
+8. **Check File Permissions**: Ensure proper read/write permissions
+9. **Check Dependencies**: Verify all packages are installed correctly
+10. **Check Code Syntax**: Look for typos, missing imports, or syntax errors
+
+### Quick Fix Commands
+
+```bash
+# Reset everything and start fresh
+npm run db:setup
+npm run server_client
+
+# Check specific table structure
+mysql -u root -p hugamara_dev -e "DESCRIBE reservations;"
+
+# Check if specific data exists
+mysql -u root -p hugamara_dev -e "SELECT COUNT(*) FROM tables;"
+
+# Restart just the backend
+cd backend && npm run dev
+
+# Restart just the frontend
+cd client && npm start
+```
+
+### 6. Start Development Servers
+
+```bash
+# Start hospitality management system
+npm run server_client
+
+# Start callcenter system (in separate terminals)
+cd mayday/slave-backend && npm start
+cd mayday/mayday-client-dashboard && npm start
+```
+
+## Available Scripts
+
+### Root Level
+
+- `npm run server_client` - Start both backend and frontend in development mode
+- `npm run server` - Start only the backend server
+- `npm run start` - Start only the frontend client
+- `npm run build` - Build the frontend for production
+
+### Callcenter System
+
+- `npm run callcenter` - Start callcenter backend server (port 8004)
+- `npm run callcenter:client` - Start callcenter frontend (port 3001)
+- `npm run callcenter:dev` - Start callcenter backend in development mode
+
+### Backend
+
+- `npm run backend:dev` - Start backend in development mode
+- `npm run backend:start` - Start backend in production mode
+- `npm run db:setup` - Reset and seed database
+- `npm run db:migrate` - Run database migrations
+- `npm run db:seed` - Seed database with test data
+
+#### Manual Migration Commands
+
+```bash
+# Run all migrations
+cd backend && node -e "const { sequelize } = require('./config/database-cli.cjs'); /* migration code */"
+
+# Run specific migration
+node run-ticket-migration.cjs
+
+# Run settings migration (outlet columns + role-permissions)
+node run-settings-migration.cjs
+
+# Check database schema
+mysql -u root -p hugamara_dev -e "DESCRIBE table_name;"
+```
+
+#### Settings Migration Requirements
+
+The settings module requires specific database columns and tables:
+
+**Outlet Table Columns:**
+
+- `tax_rate` (DECIMAL(5,2)) - Tax rate as percentage
+- `service_charge` (DECIMAL(5,2)) - Service charge as percentage
+- `delivery_fee` (DECIMAL(8,2)) - Delivery fee amount
+- `operating_hours` (JSON) - Operating hours for each day
+
+**Role-Permission Junction Table:**
+
+- `role_permissions` table with `role_id` and `permission_id` foreign keys
+- Unique constraint on `(role_id, permission_id)` combination
+
+**Migration Script:**
+
+```bash
+# Run the settings migration
+cd backend && node run-settings-migration.cjs
+```
+
+This migration adds the required columns and tables for the Settings module to function properly.
+
+### Frontend
+
+- `npm run client:install` - Install frontend dependencies
+- `npm run lint` - Run ESLint on frontend code
+- `npm run test` - Run frontend tests
+
+## Environment Variables
+
+### Backend (.env)
+
+```env
+NODE_ENV=development
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=hugamara_dev
+DB_HOST=127.0.0.1
+DB_PORT=3306
+JWT_SECRET=your-secret-key-here
+PORT=8000
+FRONTEND_URL=http://localhost:3000
+
+# Trunk Provider Configuration
+TRUNK_PROVIDER_AUTH_HEADER=MDMyMDAwMDAwODoxMy4yMzQuMTguMg==
+TRUNK_PROVIDER_VALIDATE_URL=https://ug.cyber-innovative.com:444/cyber-api/cyber_validate.php
+```
+
+### Frontend (.env)
+
+```env
+REACT_APP_API_URL=http://localhost:8000/api
+REACT_APP_ENV=development
+REACT_APP_VERSION=1.0.0
+```
+
+### Callcenter Backend (.env)
+
+```env
+NODE_ENV=development
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=asterisk
+DB_HOST=127.0.0.1
+DB_PORT=3306
+JWT_SECRET=your-secret-key-here
+PORT=8004
+FRONTEND_URL=http://localhost:3001
+
+# Asterisk recordings base directory (used by /api/recordings/*)
+# In development you can point to a local folder; in production this is set via PM2 ecosystem
+RECORDING_BASE_DIR=/var/spool/asterisk/monitor
+
+# SMTP Configuration for Email Management
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+SMTP_FROM=your-email@gmail.com
+DOMAIN=hugamara.com
+```
+
+### Callcenter Frontend (.env)
+
+The callcenter frontend requires a specific API URL to function correctly behind the Nginx reverse proxy. In `mayday/mayday-client-dashboard/.env.production`, ensure the URL is set to include the `/api` prefix, which the backend router expects:
+
+```
+REACT_APP_API_URL=/mayday-api/api
+```
+
+## Production Process Management (PM2)
+
+In the production VM environment, process management is handled by PM2. It is critical to understand how PM2 is configured to work with this project to ensure stability and ease of debugging.
+
+### Architecture Overview
+
+- **Backends Only:** PM2 is used exclusively to run the two backend Node.js applications: `hugamara-backend` and `mayday-callcenter-backend`.
+- **Nginx for Frontends:** The frontend applications (Hospitality and Call Center) are **not** run by PM2. They are static builds (`build` directory) served directly and efficiently by Nginx.
+- **Configuration:** The processes that PM2 starts are defined in `ecosystem.config.js`. The deployment script (`deploy-vm.sh`) reads this file to start or restart the applications.
+
+### Running as `root` User
+
+Due to persistent file permission issues on the EC2 instance, the deployment script (`npm run deploy`) must be run with `sudo`.
+
+```bash
+sudo npm run deploy
+```
+
+This has a critical side-effect: **PM2 and its managed processes are run by the `root` user.**
+
+This means that to interact with PM2 on the server, you **must** use `sudo`.
+
+- **Check Status:** `sudo pm2 status`
+- **View Logs:** `sudo pm2 logs`
+- **Restart a process:** `sudo pm2 restart hugamara-backend`
+
+If you run `pm2 status` without `sudo`, you will be interacting with the `admin` user's (empty) PM2 process list, which can be confusing. The `root` user owns the active processes.
+
+While running as `root` is not ideal from a security perspective, it is the current stable solution for this environment. A future task should be to investigate and resolve the underlying filesystem permissions so the deployment can be run by the non-privileged `admin` user.
+
+### Asterisk Call Recordings
+
+Call recordings are stored on the server in `/var/spool/asterisk/monitor/`. For performance and efficiency, these audio files are served directly by Nginx, not by the Node.js backend.
+
+- **Backend Role:** The `mayday-callcenter-backend` scans the recordings directory and provides a list of available files to the frontend via its API.
+- **Nginx Role:** A specific `location /recordings/` block in the `nginx-hugamara.conf` file creates an alias to the recordings directory. When the frontend requests an audio file from a `/recordings/...` URL, Nginx serves the file directly.
+
+This architecture avoids putting unnecessary load on the backend application for serving static media files.
+
+## Features
+
+### ✅ Completed
+
+- **Authentication & Authorization**
+
+  - JWT-based authentication system
+  - Role-based access control (org_admin, general_manager, supervisor, staff, marketing_crm, finance)
+  - Outlet-based user management
+  - Protected routes and middleware
+
+- **User Interface**
+
+  - Modern responsive UI with Tailwind CSS (Hospitality Management)
+  - Material-UI based interface (Callcenter Management)
+  - Mobile-optimized sidebar with slide-out navigation
+  - Dark theme support with shadows and no gradients
+  - Function-based React components using ES6
+
+- **Core Management Modules**
+
+  - **Staff Management**: Complete CRUD operations for staff members
+  - **Shift Management**: Full shift scheduling, clock in/out, break management
+  - **Support Tickets**: Ticket creation, assignment, and status tracking
+  - **Events & Promotions**: Event management with full CRUD operations
+  - **Settings**: Comprehensive system configuration including:
+    - Outlet information management
+    - System settings configuration
+    - User preferences
+    - Roles and permissions management
+    - System statistics
+    - Backup and restore functionality
+
+- **Callcenter Management System**
+
+  - **Email Management**: Complete email system with SMTP configuration
+    - SMTP server setup (Gmail, Outlook, custom servers)
+    - User configuration (signatures, auto-reply, sender settings)
+    - Security policies (attachments, file types, spam filtering)
+    - Connection testing and validation
+    - Professional Material-UI interface
+  - **Multi-tenant Architecture**: Separate from hospitality management
+  - **Real-time Configuration**: Live SMTP testing and validation
+  - **Database Integration**: Full Sequelize ORM with MySQL
+
+- **Technical Features**
+  - Redux state management with async thunks
+  - RESTful API with Express.js
+  - MySQL database with Sequelize ORM
+  - Real-time updates with Socket.IO
+  - Comprehensive error handling and validation
+  - Material-UI components (Callcenter)
+  - Nodemailer integration for email functionality
+
+### 🚧 In Progress
+
+- Table management system
+- Reservation system
+- Menu and inventory management
+- Payment processing integration
+- Advanced reporting and analytics
+
+## Recent Updates
+
+### Email Management System (Latest)
+
+- **Complete Email System**: Added comprehensive email management to callcenter dashboard
+- **SMTP Configuration**: Full SMTP server setup with Gmail, Outlook, and custom server support
+- **Professional UI**: Material-UI based interface with tabbed configuration sections
+- **Security Features**: Attachment restrictions, file type filtering, spam protection, and virus scanning
+- **Connection Testing**: Built-in SMTP connection testing and validation
+- **Database Integration**: Full Sequelize ORM integration with dedicated emails table
+- **Multi-tenant Architecture**: Separate from hospitality management system
+- **Real-time Configuration**: Live SMTP testing and validation with user feedback
+
+### Mobile Optimization
+
+- **Responsive Sidebar**: Implemented mobile-first sidebar design with slide-out navigation
+- **Touch-Friendly Interface**: Optimized all components for mobile devices
+- **Responsive Layout**: Updated CSS with mobile breakpoints and touch interactions
+- **Mobile Navigation**: Added hamburger menu with overlay and smooth transitions
+- **Improved Tooltips**: Updated tooltip text color to white for better visibility
+- **Favicon Support**: Added favicon for better branding and user experience
+
+### New Modules Added
+
+- **Shift Management**: Complete shift scheduling system with clock in/out functionality
+- **Settings Module**: Comprehensive system configuration with 6 different tabs:
+  - Outlet Information management
+  - System settings configuration
+  - User preferences
+  - Roles and permissions management
+  - System statistics dashboard
+  - Backup and restore functionality
+
+### Technical Improvements
+
+- **Backend API**: Added new controllers and routes for all modules
+- **Redux Integration**: Complete state management for all new features
+- **Service Layer**: Centralized API communication with proper error handling
+- **Form Validation**: Comprehensive client and server-side validation
+- **Real-time Updates**: Socket.IO integration for live data updates
+
+## Mobile Features
+
+The application now includes comprehensive mobile optimization:
+
+- **Responsive Sidebar**: Automatically adapts to screen size
+- **Touch Navigation**: Optimized for touch interactions
+- **Mobile-First Design**: Built with mobile devices as the primary consideration
+- **Smooth Animations**: CSS transitions for better user experience
+- **Overlay Navigation**: Mobile sidebar slides over content with backdrop
+
+## Development Workflow
+
+### Prerequisites
+
+- Node.js >= 16.0.0
+- npm >= 8.0.0
+- MySQL/MariaDB
+- Redis
+- Asterisk (for call center)
+
+### Environment Configuration
+
+#### Frontend Applications
+
+1. **Hospitality Management System** (`client/`)
+   - Port: 3000 (pinned)
+   - URL: `http://localhost:3000`
+   - Environment: `client/.env.development`
+
+```env
+REACT_APP_API_URL=http://localhost:8000/api
+REACT_APP_ENV=development
+REACT_APP_VERSION=1.0.0
+REACT_APP_CALL_CENTER_URL=http://localhost:3002/login
+```
+
+2. **Call Center Dashboard** (`mayday/mayday-client-dashboard/`)
+   - Port: 3002 (pinned)
+   - URL: `http://localhost:3002`
+   - Environment: `mayday/mayday-client-dashboard/.env`
+
+#### Backend Services
+
+1. **Hospitality Backend** (`backend/`)
+
+   - Port: 8000
+   - URL: `http://localhost:8000/api`
+   - Purpose: Hospitality management API
+
+2. **Call Center Backend** (`mayday/slave-backend/`)
+   - Port: 8004
+   - URL: `http://localhost:8004/api`
+   - Purpose: Call center operations API
+
+### Port Configuration
+
+#### Pinned Ports (Prevents CRA Auto-Switch)
+
+- **Hospitality Frontend**: Port 3000 (pinned in `client/package.json`)
+- **Call Center Frontend**: Port 3002 (pinned in root `package.json`)
+
+#### Backend Ports
+
+- **Hospitality Backend**: Port 8000
+- **Call Center Backend**: Port 8004
+
+### Starting Development Servers
+
+#### Option 1: Separate Terminals (Recommended)
+
+```bash
+# Terminal A: Hospitality + Backend
+npm run server_client_hugamara
+
+# Terminal B: Call Center Stack
+npm run callcenter
+```
+
+#### Option 2: Individual Services
+
+```bash
+# Hospitality Backend
+cd backend && npm run dev
+
+# Hospitality Frontend
+cd client && npm start
+
+# Call Center Backend
+cd mayday/slave-backend && npm run start
+
+# Call Center Frontend
+cd mayday/mayday-client-dashboard && PORT=3002 npm start
+```
+
+### User Flow
+
+#### 1. Hospitality Login Flow
+
+1. User visits `http://localhost:3000`
+2. Sees `LoginHospitality.js` with outlet selection
+3. Can select regular outlets or "Mayday Call Center"
+4. For regular outlets: Standard email/password login
+5. For call center: Opens new tab to `http://localhost:3002/login`
+
+#### 2. Call Center Login Flow
+
+1. User clicks "Open Mayday Call Center" in hospitality app
+2. New tab opens to `http://localhost:3002/login`
+3. Shows `LoginMayday.js` component
+4. User enters username/password
+5. Authenticates against call center backend (`http://localhost:8004/api`)
+
+## Production Deployment
+
+This section outlines the definitive steps to deploy both applications to a production VM using Nginx and PM2.
+
+### Final URL Mapping
+
+- `https://cs.hugamara.com/` → Serves the **Hospitality Frontend**.
+- `https://cs.hugamara.com/callcenter/` → Serves the **Call Center Frontend**.
+- `https://cs.hugamara.com/api/` → Proxies to the **Hospitality Backend** on `localhost:5000`.
+- `https://cs.hugamara.com/mayday-api/` → Proxies to the **Call Center Backend** on `localhost:5001`.
+
+### Backends and Databases
+
+- Hospitality Management System (Main Backend)
+
+  - Service: `hugamara-backend` (PM2)
+  - Default internal port: `5000`
+  - Database: `hugamara_db`
+  - DB user: `hugamara_user`
+
+- Mayday Call Center Backend
+  - Service: `mayday-callcenter-backend` (PM2)
+  - Default internal port: `5001`
+  - Database: `asterisk`
+  - DB user: `root` (in production for Asterisk realtime)
+
+These environments are configured via `ecosystem.config.js` and loaded by PM2 in production. Frontends use `.env` at build time, but backends rely on `ecosystem.config.js`.
+
+### 1. Backend Setup with PM2
+
+- **User:** All PM2 commands **must** be run as the dedicated `mayday` user. This is a security best practice.
+- **Configuration:** The backends are managed by `/home/admin/hugamara-portal/ecosystem.config.js`.
+  - `hugamara-backend` runs on port `5000`.
+  - `mayday-callcenter-backend` runs on port `5001`.
+  - Log files are written to a relative `./logs` directory within the project folder.
+
+**Key Commands on VM (One-Time Setup):**
+
+```bash
+# 1. Stop all existing PM2 processes for all users
+sudo pm2 kill
+sudo -u admin pm2 kill
+
+# 2. Create the dedicated 'mayday' user (if it doesn't exist)
+# Note: This user may already exist. If so, this command will safely fail.
+sudo useradd -m -s /bin/bash mayday
+
+# 3. Give the 'mayday' user ownership of the project files
+sudo chown -R mayday:mayday /home/admin/hugamara-portal
+
+# 4. Start applications as the 'mayday' user
+sudo -u mayday -H bash -c "cd /home/admin/hugamara-portal && pm2 start ecosystem.config.js --update-env"
+
+# 5. Save the process list to automatically restart on reboot
+sudo -u mayday -H bash -c "pm2 save"
+```
+
+### 2. Updating the Application
+
+When pulling new code from GitHub, you may need to forcefully overwrite local changes on the server.
+
+```bash
+# 1. Connect to the VM and navigate to the project directory
+cd /home/admin/hugamara-portal
+
+# 2. Force-pull the latest changes from the 'development' branch
+sudo git fetch origin
+sudo git reset --hard origin/development
+
+# 3. Ensure permissions are still correct
+sudo chown -R mayday:mayday /home/admin/hugamara-portal
+
+# 4. Rebuild frontends (see section below)
+
+# 5. Restart the backends with the new code
+sudo -u mayday pm2 restart all --update-env
+```
+
+### 3. Frontend Build Process
+
+It is critical to build both frontends on the VM with the correct environment variables. Run these commands as `root` or `admin` since `npm` may require elevated permissions for installation.
+
+**A. Build Hospitality Frontend:**
+
+```bash
+cd /home/admin/hugamara-portal/client
+rm -rf build
+npm ci
+# This variable ensures the 'Open Call Center' button points to the correct URL
+REACT_APP_CALL_CENTER_URL=/callcenter/login npm run build
+```
+
+**B. Build Call Center Frontend:**
+
+```bash
+cd /home/admin/hugamara-portal/mayday/mayday-client-dashboard
+rm -rf build
+npm ci
+# This variable ensures all asset paths (JS, CSS) are relative to /callcenter/
+PUBLIC_URL=/callcenter npm run build
+```
+
+### 4. Nginx Configuration
+
+The main nginx configuration lives at `/etc/nginx/sites-available/hugamara` (symlinked to `sites-enabled`). This version is confirmed to work.
+
+```nginx
+server {
+    listen 80;
+    server_name cs.hugamara.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name cs.hugamara.com;
+
+    ssl_certificate /etc/letsencrypt/live/cs.hugamara.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/cs.hugamara.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+
+    # --- Headers & Gzip ---
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' wss://cs.hugamara.com wss://cs.hugamara.com:8000 wss://cs.hugamara.com:8089;" always;
+
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied expired no-cache no-store private no_last_modified no_etag auth;
+    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/javascript;
+
+    # --- API PROXIES (High Priority) ---
+    # The ^~ modifier ensures these rules are matched before the static file rule.
+
+    location ^~ /api/ {
+        proxy_pass http://localhost:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    location ^~ /mayday-api/ {
+        proxy_pass http://localhost:5001/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # --- FRONTEND APPLICATIONS ---
+
+    # Call Center Assets (must be before /callcenter/)
+    location ^~ /callcenter/static/ {
+        alias /home/admin/hugamara-portal/mayday/mayday-client-dashboard/build/static/;
+        expires 1y;
+        add_header Cache-Control "public";
+    }
+
+    # Call Center Main App
+    location /callcenter/ {
+        alias /home/admin/hugamara-portal/mayday/mayday-client-dashboard/build/;
+        try_files $uri $uri/ /callcenter/index.html;
+    }
+
+    # Hospitality Main App (Catch-all)
+    location / {
+        root /home/admin/hugamara-portal/client/build;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # WebSocket support for call center backend (scoped path)
+    location ^~ /mayday-api/socket.io/ {
+        proxy_pass http://localhost:5001/socket.io/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+    }
+
+    # WebSocket support for hospitality backend (default)
+    location /socket.io/ {
+        proxy_pass http://localhost:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+    }
+
+    # WebSocket proxy - terminate TLS at Nginx and speak plain WS to Asterisk (8088)
+    location /ws {
+        proxy_pass http://127.0.0.1:8088/ws;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+        proxy_connect_timeout 60s;
+    }
+
+    # Serve Asterisk Recordings directly
+    location /recordings/ {
+        alias /var/spool/asterisk/monitor/;
+        autoindex off;
+    }
+}
+```
+
+### 5. Database Setup
+
+```bash
+sudo mysql -e "CREATE DATABASE IF NOT EXISTS hugamara_db; \
+CREATE USER IF NOT EXISTS 'hugamara_user'@'localhost' IDENTIFIED BY 'Pasword@256'; \
+GRANT ALL PRIVILEGES ON hugamara_db.* TO 'hugamara_user'@'localhost'; FLUSH PRIVILEGES;"
+
+# The asterisk database is accessed using the root user in production
+```
+
+### 6. SSL Certificates (Let's Encrypt)
+
+```bash
+sudo systemctl stop nginx
+sudo certbot certonly --standalone -d cs.hugamara.com --non-interactive --agree-tos -m admin@hugamara.com
+sudo systemctl start nginx
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### 7. Useful PM2 Commands
+
+```bash
+pm2 status
+pm2 logs --lines 100
+pm2 restart hugamara-backend --update-env
+pm2 restart mayday-callcenter-backend --update-env
+pm2 stop hugamara-backend
+pm2 save
+```
+
+### 8. Debugging and Logs
+
+- Backend service logs (Call Center backend):
+
+```bash
+pm2 logs mayday-callcenter-backend --lines 200
+```
+
+- Backend service logs (Hospitality backend):
+
+```bash
+pm2 logs hugamara-backend --lines 200
+```
+
+- Nginx logs and live follow (on the VM):
+
+```bash
+sudo tail -n 200 /var/log/nginx/error.log
+sudo tail -n 200 /var/log/nginx/access.log
+sudo tail -f /var/log/nginx/error.log /var/log/nginx/access.log
+```
+
+- If you changed `ecosystem.config.js`, always restart with updated env:
+
+```bash
+pm2 restart mayday-callcenter-backend --update-env
+pm2 restart hugamara-backend --update-env
+```
 
 ### Troubleshooting
 
-- 404 on saving config: ensure backend accepts `PUT`/`POST /api/sms/config` and the dashboard points to the correct base URL.
-- HTML returned instead of JSON on balance: verify the dashboard API base resolves to the backend (`http://localhost:8004/api` in dev) and not the React app.
-- TLS/Host issues: when using Override IP, set `Strict TLS` to `false` or configure proper certificates for the IP/Host combination.
+#### Common Issues
 
-## 🚀 Deployment
+**1. Wrong Login Page Shows**
 
-### Production Setup
+- **Symptom**: Call center opens but shows hospitality login
+- **Cause**: Port collision or wrong URL
+- **Solution**:
+  - Ensure ports are pinned correctly
+  - Check `REACT_APP_CALL_CENTER_URL` in `.env.development`
+  - Hard refresh browser (Cmd/Cmd+Shift+R)
 
-1. **Configure Environment Variables**
+**2. Call Center Page Blank with MIME Error**
 
-   - Update `.env` files with production values
-   - Set secure JWT secrets and session keys
-   - Configure production database credentials
+- **Symptom**: Console shows: `Refused to execute script ... MIME type 'text/html'` and 404s at `/static/js/...`
+- **Cause**: Call center bundle emitted asset paths under `/static/...` (root) instead of `/callcenter/static/...`
+- **Fix**:
+  1. Set `homepage: "/callcenter/"` in `mayday/mayday-client-dashboard/package.json`
+  2. Use `<Router basename="/callcenter">` in `mayday/mayday-client-dashboard/src/App.jsx`
+  3. Rebuild with `PUBLIC_URL=/callcenter npm run build`
+  4. Verify `build/index.html` references `/callcenter/static/...`
 
-2. **Set up Asterisk on EC2 server**
+**3. JWT Secret Error**
 
-   - Install Asterisk and required modules
-   - Configure AMI access and permissions
-   - Set up ODBC connections for database integration
+- **Symptom**: `"secretOrPrivateKey must be a symmetric key when using HS256"`
+- **Cause**: Mismatch between JWT algorithm and key type
+- **Solution**: Fixed in `licenseService.js` (HS256 → RS256)
 
-3. **Configure ODBC connections**
+**4. API Connection Issues**
 
-   - Install MariaDB ODBC drivers
-   - Configure `odbc.ini` and `odbcinst.ini`
-   - Test database connectivity
+- **Symptom**: Frontend can't connect to backend
+- **Solution**:
+  - Verify backend is running on correct port
+  - Check CORS configuration
+  - Verify environment variables
 
-4. **Set up reverse proxy (nginx)**
+**5. Port Conflicts (EADDRINUSE: :::5000)**
 
-   - Configure SSL termination
-   - Set up load balancing if needed
-   - Configure CORS and security headers
+- **Symptom**: Hospitality backend restarts repeatedly with `EADDRINUSE` errors.
+- **Cause**: Another Node/PM2 instance using port 5000, possibly under a different user.
+- **Fix**:
+  - Stop PM2 as both `root` and `admin` users
+  - Kill residual Node processes: `sudo pkill -9 -f node`
+  - Verify: `sudo lsof -i :5000` shows nothing, then restart PM2 as `admin`.
 
-5. **Configure SSL certificates**
+**6. Redis Authentication Error (Call Center)**
 
-   - Obtain valid SSL certificates
-   - Configure HTTPS for all services
-   - Set up certificate auto-renewal
+- **Symptom**: `ERR AUTH <password> called without any password configured` in logs.
+- **Cause**: App configured a Redis password but Redis server has none.
+- **Fix**:
+  - Either configure `requirepass` in `/etc/redis/redis.conf` and restart Redis, or
+  - Remove `REDIS_PASSWORD` from the call center app environment in `ecosystem.config.js`.
 
-6. **Set up monitoring and logging**
-   - Configure log rotation
-   - Set up health checks
-   - Monitor AMI connections and database performance
+**7. Nginx Fails to Reload**
 
-## 🔧 Troubleshooting
+- **Symptom**: Nginx fails to reload with an `invalid parameter "immutable"` error.
+- **Cause**: The server's Nginx version is older.
+- **Fix**: Change `add_header Cache-Control "public, immutable";` to `add_header Cache-Control "public";`.
 
-### Common Issues
+**8. PM2 Permission Issues**
 
-#### Port Conflicts
+- **Symptom**: PM2 fails to start with `EACCES: permission denied` on log files.
+- **Cause**: The `ecosystem.config.js` on the server has incorrect absolute log paths, and the `mayday` user doesn't have permission to write to them.
+- **Fix**: Force-pull from git (`git reset --hard`) to get the updated config with relative `./logs` paths, then ensure `mayday` owns the project directory.
 
-```bash
-# Check what's using ports
-lsof -i :3000 -i :3002 -i :8000 -i :8004
+**9. Database Connection Issues**
 
-# Kill conflicting processes
-pkill -f "react-scripts start"
-pkill -f "node server.js"
+- **Symptom**: Backend cannot connect to asterisk database
+- **Cause**: Wrong database user configuration
+- **Fix**: The mayday-callcenter-backend uses `root` user for asterisk database, not `hugamara_user`
+
+**10. Creating a Trunk Fails**
+
+- **Symptom**: Database errors like `Unknown column 'match'` or `a foreign key constraint fails`.
+- **Cause**: The `asterisk` database schema for PJSIP tables is incorrect or outdated.
+- **Fix**: Connect to the `asterisk` database and manually run SQL commands to fix the `ps_endpoint_id_ips` table.
+
+```sql
+-- Add missing columns
+ALTER TABLE ps_endpoint_id_ips ADD COLUMN `match` VARCHAR(255) NULL;
+ALTER TABLE ps_endpoint_id_ips ADD COLUMN srv_lookups VARCHAR(3) NULL;
+ALTER TABLE ps_endpoint_id_ips ADD COLUMN match_request_uri VARCHAR(3) NULL;
+
+-- Fix incorrect columns
+ALTER TABLE ps_endpoint_id_ips MODIFY COLUMN ip_match VARCHAR(80) NULL;
+ALTER TABLE ps_endpoint_id_ips MODIFY COLUMN id VARCHAR(80) NOT NULL;
+
+-- Fix incorrect foreign key relationship
+ALTER TABLE ps_endpoint_id_ips DROP FOREIGN KEY ps_endpoint_id_ips_ibfk_1;
+ALTER TABLE ps_endpoint_id_ips ADD CONSTRAINT fk_endpoint_id FOREIGN KEY (endpoint) REFERENCES ps_endpoints(id) ON DELETE CASCADE ON UPDATE CASCADE;
 ```
 
-#### Database Connection Issues
+## Contributing
 
-```bash
-# Test database connection
-cd mayday/slave-backend
-node -e "import('./config/sequelize.js').then(db => db.sequelize.authenticate())"
-```
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-#### AMI Connection Issues
+## License
 
-- Verify Asterisk server is running on EC2
-- Check AMI credentials in `.env`
-- Ensure your IP is whitelisted in `manager.conf`
+This project is proprietary software for Hugamara Hospitality Group.
 
-#### JWT Secret Errors
 
-- Ensure `JWT_SECRET` is set in `.env`
-- Verify secret is long enough (minimum 32 characters)
-- Restart the backend after changing secrets
+## Mayday Unified Outbound Dialplan (file-based)
 
-### Development Mode Features
+This repository includes a lean, file-based outbound helper and prefix routing that the provider requires (dynamic From via P-Preferred-Identity). The canonical config is stored here:
 
-- **Automatic License Fallback**: Creates development license when master server unavailable
-- **Error Resilience**: Server continues running despite AMI connection failures
-- **WebSocket Reconnection**: Automatic reconnection to frontend clients
-- **Session Cleanup**: Automatic cleanup of expired sessions and orphaned data
+- docs/asterisk/extensions_mayday_context.conf
 
----
+Key behavior:
+- 2-digit DID prefix (last two digits) selects Caller ID explicitly, then dials: `_4[3-9]X.` → `45 0700…` uses `0323300245`, etc.
+- No prefix: uses `DEFAULT_DID` if set, else falls back to `DEFAULT_DID_FALLBACK=0323300243`.
+- The outbound helper `outbound-dial` normalizes destination to national (07…), sets CLI, and adds P-Preferred-Identity to drive dynamic From.
 
-**Note**: This call center system is designed to work alongside the main Hugamara hospitality management system, providing a complete solution for both hospitality operations and customer service management.
+Recommended deployment on PBX:
+1. Copy the file to the server:
+   - `/etc/asterisk/extensions_mayday_context.conf`
+2. Ensure it is included from `extensions.conf` (or your existing include chain), e.g.:
+   - `#include extensions_mayday_context.conf`
+3. Reload dialplan:
+   - `sudo asterisk -rx "dialplan reload"`
+4. Verify:
+   - `sudo asterisk -rx "dialplan show outbound-dial"`
+   - `sudo asterisk -rx "dialplan show from-internal"`
+
+Provider alignment:
+- Uses `PJSIP_HEADER(add,P-Preferred-Identity)=<sip:${ARG2}@${TRUNK_DOMAIN}>` so the provider sees the DID as From identity even when the trunk has no `from_user` per DID.
+- Ensure the trunk endpoint (`Hugamara_Trunk`) permits identity headers and CLI presentation.
+

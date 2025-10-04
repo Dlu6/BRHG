@@ -1,38 +1,41 @@
 {
-  "name": "website",
-  "version": "0.1.0",
+  "name": "hugamara-hospitality-app",
+  "version": "1.0.0",
+  "description": "Comprehensive hospitality management dashboard for Hugamara's 6 outlets",
   "private": true,
-  "dependencies": {
-    "@ant-design/v5-patch-for-react-19": "^1.0.3",
-    "@emailjs/browser": "^4.4.1",
-    "@testing-library/dom": "^10.4.0",
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^13.5.0",
-    "antd": "^5.26.1",
-    "axios": "^1.10.0",
-    "country-codes-list": "^2.0.0",
-    "moment": "^2.30.1",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-google-recaptcha": "^3.1.0",
-    "react-router-dom": "^7.6.1",
-    "react-scripts": "5.0.1",
-    "socket.io-client": "^4.8.1",
-    "web-vitals": "^2.1.4"
-  },
+  "type": "module",
   "scripts": {
-    "start": "react-scripts start",
-    "master_client_server": "concurrently \"npm run start\" \"cd provisioning_backend && npm run server\"",
-    "build": "cd wiki && npm install && npm run build && cd .. && react-scripts build && cp -r wiki/build build/wiki",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "start": "cd client && react-scripts start",
+    "build": "cd client && react-scripts build",
+    "test": "cd client && react-scripts test",
+    "eject": "cd client && react-scripts eject",
+    "lint": "cd client && eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "cd client && eslint . --ext js,jsx --fix",
+    "server": "cd backend && npm run dev",
+    "server_client_hugamara": "concurrently \"npm run server\" \"cd client && npm start\"",
+    "client:install": "cd client && npm install",
+    "backend:install": "cd backend && npm install",
+    "backend:dev": "cd backend && npm run dev",
+    "backend:start": "cd backend && npm start",
+    "db:setup": "cd backend && npm run db:reset",
+    "db:migrate": "cd backend && npm run db:migrate",
+    "db:seed": "cd backend && npm run db:seed",
+    "seed:placeholder": "cd backend && npm run seed:placeholder",
+    "setup": "./setup-dev.sh",
+    "install:all": "./install-deps.sh",
+    "callcenter": "concurrently \"cd mayday/provisioning_backend && npm run start\" \"cd mayday/slave-backend && npm run start\" \"cd mayday/mayday-client-dashboard && PORT=3002 npm start\"",
+    "callcenter:install": "cd mayday/provisioning_backend && npm install && cd ../slave-backend && npm install && cd ../mayday-client-dashboard && npm install",
+    "callcenter:provisioning": "cd mayday/provisioning_backend && npm run start",
+    "callcenter:backend": "cd mayday/slave-backend && npm run start",
+    "callcenter:frontend": "cd mayday/mayday-client-dashboard && PORT=3002 npm start",
+    "deploy": "bash ./deploy-vm.sh"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
   },
   "browserslist": {
     "production": [
@@ -46,7 +49,7 @@
       "last 1 safari version"
     ]
   },
-  "devDependencies": {
-    "concurrently": "^9.2.0"
+  "dependencies": {
+    "ws": "^8.18.3"
   }
 }
