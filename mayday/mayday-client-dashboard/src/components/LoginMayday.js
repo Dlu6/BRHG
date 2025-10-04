@@ -99,10 +99,20 @@ const LoginMayday = () => {
       container
       alignItems="center"
       justifyContent="center"
-      style={{ minHeight: "100vh", backgroundColor: "#f0f4f8" }}
+      sx={{
+        minHeight: "100vh",
+        backgroundColor: "#f0f4f8",
+        padding: { xs: 1, sm: 2 },
+      }}
     >
-      <Grid item xs={11} sm={8} md={6} lg={4}>
-        <Paper elevation={6} style={{ padding: "2rem" }}>
+      <Grid item xs={12} sm={10} md={8} lg={6} xl={4}>
+        <Paper
+          elevation={6}
+          sx={{
+            padding: { xs: "1.5rem", sm: "2rem" },
+            margin: { xs: "1rem", sm: "0" },
+          }}
+        >
           {/* <Box textAlign="center" mb={2}>
             <Typography
               variant="h4"
@@ -120,20 +130,26 @@ const LoginMayday = () => {
           </Box> */}
 
           {/* Add Logo */}
-          <img
-            src={brLogo}
-            alt="Mayday Logo"
-            style={{
-              width: "400px",
-              height: "400px",
-              objectFit: "contain",
-              marginBottom: "-10rem",
-              // center the logo
-              display: "block",
-              marginLeft: "auto",
-              marginRight: "auto",
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: { xs: "-2rem", sm: "-3rem", md: "-4rem" },
             }}
-          />
+          >
+            <Box
+              component="img"
+              src={brLogo}
+              alt="Mayday Logo"
+              sx={{
+                width: "100%",
+                maxWidth: { xs: "200px", sm: "250px", md: "300px" },
+                height: "auto",
+                objectFit: "contain",
+              }}
+            />
+          </Box>
           {/* Stylish divider */}
           <Box
             sx={{
@@ -162,14 +178,15 @@ const LoginMayday = () => {
           <Typography
             variant="h6"
             component="h2"
-            style={{
+            sx={{
               textAlign: "center",
               marginBottom: "1.5rem",
               color: "#555",
               fontWeight: "lighter",
-              fontSize: "14px",
+              fontSize: { xs: "12px", sm: "14px" },
               fontFamily: "Arial, sans-serif",
               fontStyle: "italic",
+              padding: { xs: "0 1rem", sm: "0" },
             }}
           >
             Logon to manage Mayday Contact Center!
@@ -246,12 +263,14 @@ const LoginMayday = () => {
                 "&:hover": {
                   backgroundColor: "#046577",
                 },
+                marginTop: "1rem",
+                height: { xs: "48px", sm: "40px" },
+                fontSize: { xs: "16px", sm: "14px" },
               }}
               // color="warning"
               variant="contained"
               fullWidth
               disabled={loading} // Disable button while loading
-              style={{ marginTop: "1rem", height: "40px" }}
             >
               {loading ? (
                 <CircularProgress size={24} color="inherit" />
