@@ -40,10 +40,13 @@ npm install --no-audit --no-fund
 
 # Build frontend
 echo -e "${BLUE}🏗️ Building frontend...${NC}"
-# Remove homepage setting to build for root path
-if grep -q '"homepage":' package.json; then
-    echo -e "${YELLOW}⚠️  Removing homepage setting for root path serving...${NC}"
+# Ensure homepage setting is correct for /callcenter/ path
+if ! grep -q '"homepage": "/callcenter/"' package.json; then
+    echo -e "${YELLOW}⚠️  Setting homepage to /callcenter/ for proper routing...${NC}"
+    # Remove any existing homepage setting
     sed -i '/"homepage":/d' package.json
+    # Add the correct homepage setting
+    sed -i '/"private": true,/a\  "homepage": "/callcenter/",' package.json
 fi
 
 # Clean previous build
@@ -120,7 +123,7 @@ fi
 
 echo -e "${GREEN}🎉 Deployment completed successfully!${NC}"
 echo -e "${YELLOW}📋 Access URLs:${NC}"
-echo "• Call Center Dashboard: https://cs.backspace.ug/"
+echo "• Call Center Dashboard: https://cs.backspace.ug/callcenter/"
 echo "• Call Center API: https://cs.backspace.ug/mayday-api/api/"
 echo ""
 echo -e "${YELLOW}🔧 Useful commands:${NC}"
