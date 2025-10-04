@@ -1,33 +1,9 @@
 module.exports = {
   apps: [
     {
-      name: "hugamara-backend",
-      script: "./backend/server.js",
-      cwd: "/home/admin/hugamara-portal",
-      instances: 1,
-      exec_mode: "fork",
-      env: {
-        NODE_ENV: "production",
-        PORT: 5000,
-        DB_HOST: "127.0.0.1",
-        DB_PORT: 3306,
-        DB_NAME: "hugamara_db",
-        DB_USER: "hugamara_user",
-        DB_PASSWORD: "Pasword@256",
-        DB_SSL: "false",
-      },
-      error_file: "./logs/hugamara-backend-error.log",
-      out_file: "./logs/hugamara-backend-out.log",
-      log_file: "./logs/hugamara-backend-combined.log",
-      time: true,
-      autorestart: true,
-      watch: false,
-      max_memory_restart: "1G",
-    },
-    {
-      name: "mayday-callcenter-backend",
+      name: "brhg-callcenter-backend",
       script: "./mayday/slave-backend/server.js",
-      cwd: "/home/admin/hugamara-portal",
+      cwd: "/home/admin/brhg-portal",
       instances: 1,
       exec_mode: "fork",
       env: {
@@ -38,20 +14,20 @@ module.exports = {
         DB_PORT: 3306,
         DB_NAME: "asterisk",
         DB_USER: "asterisk",
-        DB_PASSWORD: "",
+        DB_PASSWORD: "Pasword@256",
         // DB_PASSWORD: "", // No password for root user on localhost
         DB_SSL: "false",
         // Recording files base directory (Asterisk monitor path)
         RECORDING_BASE_DIR: "/var/spool/asterisk/monitor",
 
         // SLAVE SERVER CONFIGURATION (THIS SERVER)
-        SLAVE_SERVER_URL: "https://cs.hugamara.com",
-        SLAVE_SERVER_API_URL: "https://cs.hugamara.com/mayday-api",
-        SLAVE_WEBSOCKET_URL: "wss://cs.hugamara.com",
-        SLAVE_SERVER_DOMAIN: "cs.hugamara.com",
+        SLAVE_SERVER_URL: "https://cs.backspace.ug",
+        SLAVE_SERVER_API_URL: "https://cs.backspace.ug/mayday-api",
+        SLAVE_WEBSOCKET_URL: "wss://cs.backspace.ug",
+        SLAVE_SERVER_DOMAIN: "cs.backspace.ug",
         // WebRTC/SIP hostnames for WSS registration
-        PUBLIC_IP: "cs.hugamara.com",
-        ASTERISK_HOST: "cs.hugamara.com",
+        PUBLIC_IP: "cs.backspace.ug",
+        ASTERISK_HOST: "cs.backspace.ug",
         ASTERISK_SIP_PORT: "8088",
 
         // Redis Configuration
@@ -149,7 +125,7 @@ module.exports = {
 
         // ========== WHATSAPP WEBHOOK CONFIGURATION ==========
         // Webhook endpoints for receiving WhatsApp messages
-        WHATSAPP_WEBHOOK_URL: "https://cs.hugamara.com/api/whatsapp/webhook",
+        WHATSAPP_WEBHOOK_URL: "https://cs.backspace.ug/api/whatsapp/webhook",
         WHATSAPP_WEBHOOK_VERIFY_TOKEN: "your_webhook_verify_token",
 
         // ========== WHATSAPP MESSAGE CONFIGURATION ==========
@@ -195,7 +171,7 @@ module.exports = {
         SMS_PROVIDER_PASSWORD: "Mayday@#1759!",
         // SMS_PROVIDER_AUTH: "Basic bWVkaGk6THVzdWt1QCMyMDI1IQ==",
         SMS_DEFAULT_SENDER: "Hugamara",
-        SMS_DLR_URL: "https://cs.hugamara.com/api/sms/dlr",
+        SMS_DLR_URL: "https://cs.backspace.ug/api/sms/dlr",
       },
       error_file: "./logs/mayday-backend-error.log",
       out_file: "./logs/mayday-backend-out.log",
