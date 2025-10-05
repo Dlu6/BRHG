@@ -72,7 +72,7 @@ const connect = async () => {
     try {
       // Use Socket.IO – matches backend expectations in server/services/socketService.js
       const url = wsBaseUrl; // e.g., ws://localhost:8004 or wss://cs.backspace.ug
-      console.log("Connecting to agent Socket.IO with URL:", url);
+      // Connection log suppressed after stabilization
 
       // Clean up previous socket if any
       if (socket) {
@@ -90,6 +90,7 @@ const connect = async () => {
       socket = io(url, {
         path: socketPath,
         transports: ["websocket"],
+        // Most Socket.IO auth middlewares expect the raw token here (no Bearer)
         auth: { token },
         extraHeaders: { Authorization: `Bearer ${token}` },
       });
@@ -106,10 +107,11 @@ const connect = async () => {
       });
 
       socket.on("connect_error", (error) => {
-        console.error(
-          "Agent Socket.IO connect_error:",
-          error?.message || error
-        );
+        console.error("Agent Socket.IO connect_error:", {
+          message: error?.message || String(error),
+          data: error?.data,
+          description: error?.description,
+        });
         if (reconnectAttempts < maxReconnectAttempts) {
           reconnectAttempts++;
           setTimeout(() => connect(), 2000);

@@ -158,7 +158,9 @@ const dummyChats = [
 ];
 
 const API_BASE_URL =
-  process.env.REACT_APP_API_URL || "http://localhost:8004/api";
+  process.env.NODE_ENV === "development"
+    ? "http://localhost:8004/api"
+    : "https://cs.backspace.ug/mayday-api/api";
 
 const socketUrl =
   process.env.NODE_ENV === "development"
@@ -171,6 +173,7 @@ const sendWhatsAppMessage = async (messageData) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
       },
       body: JSON.stringify(messageData),
     });
@@ -2204,7 +2207,7 @@ const WhatsAppElectronComponent = ({ open, onClose, initialChat = null }) => {
 
     // Initialize notification sound
     if (notificationsEnabled) {
-      const audio = new Audio("/notification.mp3"); // You can add a notification sound file
+      const audio = new Audio("/assets/sounds/notification.mp3");
       setNewMessageSound(audio);
     }
 
