@@ -67,7 +67,7 @@ const whatsAppService = {
     });
   },
 
-  transferConversation: async (conversationId, agentId) => {
+  transferConversationToAgent: async (conversationId, agentId) => {
     return safeApiCall(async () => {
       const response = await axios.post(
         `${API_BASE_URL}/conversations/${conversationId}/transfer`,
@@ -117,7 +117,7 @@ const whatsAppService = {
     });
   },
 
-  sendTemplateMessage: async (contactId, messageData) => {
+  sendTemplateMessageToContact: async (contactId, messageData) => {
     return safeApiCall(async () => {
       const encodedContactId = encodeURIComponent(contactId);
       const response = await axios.post(
