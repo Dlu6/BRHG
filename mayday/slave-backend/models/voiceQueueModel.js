@@ -36,7 +36,7 @@ export const VoiceQueue = sequelize.define(
         "wrandom"
       ),
       allowNull: false,
-      defaultValue: "ringall",
+      defaultValue: "rrmemory",
     },
     servicelevel: {
       // Changed to match Asterisk's exact parameter name

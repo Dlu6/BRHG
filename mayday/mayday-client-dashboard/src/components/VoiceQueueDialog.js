@@ -33,7 +33,7 @@ const VoiceQueueDialog = ({
 }) => {
   const [formData, setFormData] = useState({
     name: "",
-    strategy: "",
+    strategy: "rrmemory",
     description: "",
     musiconhold: "default",
     timeout: 15,

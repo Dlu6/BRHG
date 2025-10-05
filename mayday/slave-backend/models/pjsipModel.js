@@ -24,7 +24,7 @@ export const PJSIPEndpoint = sequelize.define(
   "ps_endpoints",
   {
     id: {
-      type: DataTypes.STRING(40),
+      type: DataTypes.STRING(255),
       primaryKey: true,
       allowNull: false,
     },
@@ -166,8 +166,8 @@ export const PJSIPEndpoint = sequelize.define(
     },
 
     enabled: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true,
+      type: DataTypes.TINYINT,
+      defaultValue: 1,
       allowNull: false,
     },
     active: {
@@ -280,9 +280,9 @@ export const PJSIPAuth = sequelize.define(
       type: DataTypes.STRING(40),
       allowNull: false,
     },
-    // realm: PJSIP_STRING(),
+    realm: PJSIP_STRING(40),
     user_id: {
-      type: DataTypes.UUID,
+      type: DataTypes.CHAR(36),
       allowNull: true,
       references: {
         model: "users",
@@ -322,7 +322,7 @@ export const PJSIPAor = sequelize.define(
     },
     default_expiration: {
       type: DataTypes.INTEGER,
-      defaultValue: 600, // Shorter expiration for WebSocket
+      defaultValue: 3600,
     },
     remove_existing: {
       type: DataTypes.ENUM("yes", "no"),
@@ -350,9 +350,9 @@ export const PJSIPAor = sequelize.define(
     },
     outbound_proxy: PJSIP_STRING(255),
     rewrite_contact: {
-      type: DataTypes.ENUM("yes", "no"),
+      type: DataTypes.STRING(10),
       defaultValue: "yes",
-      allowNull: false,
+      allowNull: true,
     },
     // WebSocket-specific AOR settings
     websocket_enabled: {
@@ -678,7 +678,7 @@ export const generatePJSIPConfig = (
       authenticate_qualify: "yes",
       maximum_expiration: 7200,
       minimum_expiration: 60,
-      default_expiration: 600, // Shorter expiration for WebSocket
+      default_expiration: 3600,
       support_path: "yes", // Keep yes for WebSocket
       rewrite_contact: "yes", // Important for WebSocket connections
       outbound_proxy: null, // No proxy for WebSocket connections
