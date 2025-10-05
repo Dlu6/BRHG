@@ -335,7 +335,7 @@ const SmsConfig = () => {
                 value={config.dlrUrl || ""}
                 onChange={onChange("dlrUrl")}
                 fullWidth
-                placeholder="https://cs.hugamara.com/api/sms/dlr"
+                placeholder="https://cs.backspace.ug/api/sms/dlr"
               />
             </Grid>
           </Grid>

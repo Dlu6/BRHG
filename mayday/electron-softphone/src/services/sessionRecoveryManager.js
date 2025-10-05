@@ -686,7 +686,7 @@ const createSessionRecoveryManager = () => {
                 apiUrl:
                   process.env.NODE_ENV === "development"
                     ? "http://localhost:8004"
-                    : "https://cs.hugamara.com/mayday-api",
+                    : "https://cs.backspace.ug/mayday-api",
                 token: token,
               });
 

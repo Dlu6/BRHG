@@ -10,7 +10,7 @@ import {
 const API_URL =
   process.env.NODE_ENV === "development"
     ? "http://localhost:8004"
-    : "https://cs.hugamara.com/mayday-api";
+    : "https://cs.backspace.ug/mayday-api";
 
 console.log("API_URL in callHistoryService.js>>>>>:", API_URL);
 

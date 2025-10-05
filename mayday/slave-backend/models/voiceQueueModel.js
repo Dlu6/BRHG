@@ -1,6 +1,6 @@
 import sequelizePkg from "sequelize";
-const { DataTypes } = sequelizePkg;
 import sequelize from "../config/sequelize.js";
+const { DataTypes } = sequelizePkg;
 
 export const VoiceQueue = sequelize.define(
   "voice_queues",

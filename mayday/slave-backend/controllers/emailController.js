@@ -221,7 +221,7 @@ export const createEmail = async (req, res) => {
     // Generate unique message ID
     const messageId = `<${Date.now()}.${Math.random()
       .toString(36)
-      .substr(2, 9)}@${process.env.DOMAIN || "cs.hugamara.com"}>`;
+      .substr(2, 9)}@${process.env.DOMAIN || "cs.backspace.ug"}>`;
 
     const emailData = {
       messageId,
@@ -710,7 +710,7 @@ export const getEmailConfiguration = async (req, res) => {
         user: process.env.SMTP_USER || "",
         password: process.env.SMTP_PASS || "",
         from: process.env.SMTP_FROM || "",
-        domain: process.env.DOMAIN || "cs.hugamara.com",
+        domain: process.env.DOMAIN || "cs.backspace.ug",
       },
       user: {
         defaultFromName: "Hugamara Support",

@@ -67,7 +67,7 @@ const EmailManagement = () => {
     user: "",
     password: "",
     from: "",
-    domain: "cs.hugamara.com",
+    domain: "cs.backspace.ug",
   });
 
   // User Configuration
@@ -284,7 +284,7 @@ const EmailManagement = () => {
                 }
                 margin="normal"
                 variant="outlined"
-                helperText="Your organization's domain (e.g., cs.hugamara.com)"
+                helperText="Your organization's domain (e.g., cs.backspace.ug)"
               />
             </Grid>
 

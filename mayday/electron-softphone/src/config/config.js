@@ -6,11 +6,11 @@ const config = {
     sipWsUrl: "ws://13.234.18.2:8088/ws",
   },
   production: {
-    apiUrl: "https://cs.hugamara.com/mayday-api",
-    wsUrl: "wss://cs.hugamara.com/ws",
-    baseUrl: "https://cs.hugamara.com/mayday-api",
+    apiUrl: "https://cs.backspace.ug/mayday-api",
+    wsUrl: "wss://cs.backspace.ug/ws",
+    baseUrl: "https://cs.backspace.ug/mayday-api",
     // sipWsUrl: "ws://13.234.18.2:8088/ws",
-    sipWsUrl: "wss://cs.hugamara.com/ws",
+    sipWsUrl: "wss://cs.backspace.ug/ws",
   },
 };
 

@@ -163,7 +163,7 @@ const API_BASE_URL =
 const socketUrl =
   process.env.NODE_ENV === "development"
     ? "http://localhost:8004"
-    : "https://cs.hugamara.com";
+    : "https://cs.backspace.ug";
 
 const sendWhatsAppMessage = async (messageData) => {
   try {

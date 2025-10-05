@@ -7,7 +7,7 @@
     "start": "expo start --clear",
     "start:tunnel": "expo start --tunnel",
     "start:devclient": "expo start --dev-client --tunnel",
-    "start:vm": "EXPO_PUBLIC_API_BASE_URL=https://cs.hugamara.com/mayday-api EXPO_PUBLIC_SIP_DOMAIN=cs.hugamara.com expo start --dev-client --tunnel",
+    "start:vm": "EXPO_PUBLIC_API_BASE_URL=https://cs.backspace.ug/mayday-api EXPO_PUBLIC_SIP_DOMAIN=cs.hugamara.com expo start --dev-client --tunnel",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",

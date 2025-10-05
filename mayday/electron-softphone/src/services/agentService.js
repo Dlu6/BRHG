@@ -71,7 +71,7 @@ const connect = async () => {
   return new Promise((resolve, reject) => {
     try {
       // Use Socket.IO – matches backend expectations in server/services/socketService.js
-      const url = wsBaseUrl; // e.g., ws://localhost:8004 or wss://cs.hugamara.com
+      const url = wsBaseUrl; // e.g., ws://localhost:8004 or wss://cs.backspace.ug
       console.log("Connecting to agent Socket.IO with URL:", url);
 
       // Clean up previous socket if any

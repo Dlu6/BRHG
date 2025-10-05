@@ -3035,7 +3035,7 @@ const AdminPage = () => {
                 },
               ]}
             >
-              <Input placeholder="e.g., cs.hugamara.com" />
+              <Input placeholder="e.g., cs.backspace.ug" />
             </Form.Item>
 
             <Form.Item name="description" label="Description">
@@ -3056,7 +3056,7 @@ const AdminPage = () => {
                 },
               ]}
             >
-              <Input placeholder="e.g., https://cs.hugamara.com:8004" />
+              <Input placeholder="e.g., https://cs.backspace.ug:8004" />
             </Form.Item>
 
             <Form.Item
@@ -3069,7 +3069,7 @@ const AdminPage = () => {
                 },
               ]}
             >
-              <Input placeholder="e.g., wss://cs.hugamara.com:8089" />
+              <Input placeholder="e.g., wss://cs.backspace.ug:8089" />
             </Form.Item>
 
             <div className="form-help-text">

@@ -119,7 +119,7 @@ const LoginElectron = ({ onLoginSuccess }) => {
     host:
       process.env.NODE_ENV === "development"
         ? "http://localhost:8004"
-        : "https://cs.hugamara.com",
+        : "https://cs.backspace.ug",
     email: "",
     password: "",
     rememberMe: false,
@@ -260,11 +260,11 @@ const LoginElectron = ({ onLoginSuccess }) => {
         }
       })();
 
-      const isHugamaraDomain = /(^|\.)cs.hugamara\.com$/i.test(hostname);
+      const isBackspaceDomain = /(^|\.)cs.backspace.ug\.com$/i.test(hostname);
       const apiBasePath =
         process.env.NODE_ENV === "development"
           ? "/api"
-          : isHugamaraDomain
+          : isBackspaceDomain
           ? "/mayday-api/api"
           : "/api";
 
@@ -339,7 +339,7 @@ const LoginElectron = ({ onLoginSuccess }) => {
         if (isLocalHost) {
           return `ws://${host}:8088/ws`;
         }
-        return `wss://cs.hugamara.com/ws`;
+        return `wss://cs.backspace.ug/ws`;
       })();
 
       // console.log("🤣🤣🤣🤣🤣🤣SIP config:", {
@@ -400,10 +400,10 @@ const LoginElectron = ({ onLoginSuccess }) => {
         // Use remote URL preference if set, otherwise default based on NODE_ENV
         const useRemote = localStorage.getItem("useRemoteUrl") === "true";
         const base = useRemote
-          ? "https://cs.hugamara.com/mayday-api"
+          ? "https://cs.backspace.ug/mayday-api"
           : process.env.NODE_ENV === "development"
           ? "http://localhost:8004"
-          : "https://cs.hugamara.com/mayday-api";
+          : "https://cs.backspace.ug/mayday-api";
 
         // In development, our backend runs without the /mayday-api prefix.
         const notifyUrl = `${base}${

@@ -12,7 +12,7 @@ const getSocketUrl = () => {
   }
 
   // In production or Electron, use the production URL
-  return "https://cs.hugamara.com";
+  return "https://cs.backspace.ug";
 };
 
 // Determine Socket.IO path based on environment

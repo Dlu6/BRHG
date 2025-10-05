@@ -397,7 +397,7 @@ const Appbar = ({ onLogout, onToggleCollapse, isCollapsed }) => {
             `${
               process.env.NODE_ENV === "development"
                 ? "http://localhost:8004"
-                : "https://cs.hugamara.com/mayday-api"
+                : "https://cs.backspace.ug/mayday-api"
             }/api/users/agent-logout`,
             {
               method: "POST",
@@ -1906,7 +1906,7 @@ const Appbar = ({ onLogout, onToggleCollapse, isCollapsed }) => {
           `${
             process.env.NODE_ENV === "development"
               ? "http://localhost:8004"
-              : "https://cs.hugamara.com/mayday-api"
+              : "https://cs.backspace.ug/mayday-api"
           }/api/users/agent-presence`,
           {
             method: "POST",
@@ -2592,7 +2592,7 @@ const Appbar = ({ onLogout, onToggleCollapse, isCollapsed }) => {
         const base =
           process.env.NODE_ENV === "development"
             ? "http://localhost:8004"
-            : "https://cs.hugamara.com/mayday-api";
+            : "https://cs.backspace.ug/mayday-api";
         const resp = await fetch(`${base}/api/agent-status`, {
           headers: {
             Authorization: `Bearer ${token}`,

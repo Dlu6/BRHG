@@ -163,8 +163,8 @@ verify_client=no
 local_net=0.0.0.0/0
 symmetric_transport=yes
 allow_reload=yes
-cert_file=/etc/letsencrypt/live/cs.hugamara.com/fullchain.pem
-priv_key_file=/etc/letsencrypt/live/cs.hugamara.com/privkey.pem
+cert_file=/etc/letsencrypt/live/cs.backspace.ug/fullchain.pem
+priv_key_file=/etc/letsencrypt/live/cs.backspace.ug/privkey.pem
 `;
     }
 
@@ -311,8 +311,8 @@ verify_client=no
 local_net=0.0.0.0/0
 symmetric_transport=yes
 allow_reload=yes
-cert_file=/etc/letsencrypt/live/cs.hugamara.com/fullchain.pem
-priv_key_file=/etc/letsencrypt/live/cs.hugamara.com/privkey.pem
+cert_file=/etc/letsencrypt/live/cs.backspace.ug/fullchain.pem
+priv_key_file=/etc/letsencrypt/live/cs.backspace.ug/privkey.pem
 `;
 
     // Find the right place to insert (after [general] section if it exists)

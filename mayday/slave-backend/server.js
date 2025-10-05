@@ -115,7 +115,7 @@ let io;
 
 // Set up CORS options
 const allowedOrigins = [
-  "https://cs.hugamara.com",
+  "https://cs.backspace.ug",
   // Environment-based origins
   process.env.SLAVE_SERVER_URL,
   process.env.MASTER_SERVER_URL,
@@ -171,9 +171,9 @@ const corsOptions = {
     }
 
     // Always allow our public domain and subdomains
-    const hugamaraPattern =
-      /^https?:\/\/([\w-]+\.)*cs\.hugamara\.com(?::\d+)?$/i;
-    if (hugamaraPattern.test(origin)) {
+    const backspacePattern =
+      /^https?:\/\/([\w-]+\.)*cs\.backspace\.ug\.com(?::\d+)?$/i;
+    if (backspacePattern.test(origin)) {
       callback(null, true);
       return;
     }

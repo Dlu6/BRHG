@@ -36,8 +36,7 @@ const getEnv = (key, fallback = undefined) =>
     ? process.env[key]
     : fallback;
 const getAsteriskHost = () =>
-  getEnv("ASTERISK_HOST", getEnv("SLAVE_SERVER_DOMAIN", "cs.hugamara.com"));
-const getSipPort = () => getEnv("ASTERISK_SIP_PORT", "5060");
+  getEnv("ASTERISK_HOST", getEnv("SLAVE_SERVER_DOMAIN", "cs.backspace.ug"));
 export const superUserLogin = async (req, res) => {
   const { username, password } = req.body;
   try {
@@ -468,8 +467,7 @@ export const createPJSIPUser = async (req, res) => {
           transport: "transport-wss",
           webrtc: "yes",
           dtls_auto_generate_cert: "no",
-          //   dtls_cert_file: "/etc/letsencrypt/live/cs.hugamara.com/fullchain.pem",
-          //   dtls_private_key: "/etc/letsencrypt/live/cs.hugamara.com/privkey.pem",
+
           direct_media: "no",
           force_rport: "yes",
           ice_support: "yes",
