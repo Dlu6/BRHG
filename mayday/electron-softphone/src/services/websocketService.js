@@ -80,7 +80,7 @@ class WebSocketService extends EventEmitter {
     // Default to production URL for Electron or when window is not available
     // Extract base URL without /mayday-api path for Socket.IO
     const apiUrl =
-      import.meta.env?.VITE_API_URL || "https://cs.hugamara.com/mayday-api";
+      import.meta.env?.VITE_API_URL || "https://cs.backspace.ug/mayday-api";
     return apiUrl.replace("/mayday-api", "");
   }
 
