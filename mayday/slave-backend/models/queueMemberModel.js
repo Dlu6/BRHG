@@ -51,7 +51,7 @@ const QueueMember = sequelize.define(
       comment: "Whether the member is paused",
     },
     endpoint_id: {
-      type: DataTypes.STRING(40),
+      type: DataTypes.STRING(255),
       allowNull: true,
       references: {
         model: "ps_endpoints",

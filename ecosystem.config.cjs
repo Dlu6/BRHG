@@ -170,7 +170,7 @@ module.exports = {
         SMS_PROVIDER_USERNAME: "medhi",
         SMS_PROVIDER_PASSWORD: "Mayday@#1759!",
         // SMS_PROVIDER_AUTH: "Basic bWVkaGk6THVzdWt1QCMyMDI1IQ==",
-        SMS_DEFAULT_SENDER: "Hugamara",
+        SMS_DEFAULT_SENDER: "BRHG",
         SMS_DLR_URL: "https://cs.backspace.ug/api/sms/dlr",
       },
       error_file: "./logs/mayday-backend-error.log",

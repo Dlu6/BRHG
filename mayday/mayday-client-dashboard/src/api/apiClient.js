@@ -12,7 +12,7 @@ const getBaseUrl = () => {
   if (typeof window !== "undefined") {
     const host = window.location.hostname;
     if (host === "localhost" || host === "127.0.0.1") {
-      return "http://localhost:8004/api";
+      return "http://localhost:8001/api";
     }
   }
 
