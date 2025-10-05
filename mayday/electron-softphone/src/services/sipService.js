@@ -94,7 +94,7 @@ async function connect(config) {
     const apiHost =
       process.env.NODE_ENV === "development"
         ? "localhost:8004"
-        : "cs.hugamara.com";
+        : "cs.backspace.ug";
 
     let iceServers = [];
 
@@ -2512,7 +2512,7 @@ export const sipCallService = {
       const apiHost =
         process.env.NODE_ENV === "development"
           ? "localhost:8004"
-          : "cs.hugamara.com";
+          : "cs.backspace.ug";
       const apiProtocol =
         process.env.NODE_ENV === "development" ? "http" : "https";
 

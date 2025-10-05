@@ -1,6 +1,6 @@
 import sequelizePkg from "sequelize";
-const { DataTypes } = sequelizePkg;
 import sequelize from "../config/sequelize.js";
+const { DataTypes } = sequelizePkg;
 
 const QueueMember = sequelize.define(
   "queue_members",

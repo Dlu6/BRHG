@@ -1,8 +1,8 @@
 // models/voiceExtensionModel.js
 import sequelizePkg from "sequelize";
-const { DataTypes } = sequelizePkg;
 import sequelize from "../config/sequelize.js";
 import Interval from "./intervalModel.js";
+const { DataTypes } = sequelizePkg;
 
 const VoiceExtension = sequelize.define(
   "VoiceExtension",
