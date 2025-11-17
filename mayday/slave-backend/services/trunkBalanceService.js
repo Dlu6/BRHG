@@ -5,7 +5,7 @@ const baseUrl =
   "https://ug.cyber-innovative.com:444/cyber-api/cyber_validate.php";
 const authHeader =
   process.env.TRUNK_PROVIDER_AUTH_HEADER ||
-  "Basic MDMyMDAwMDAwNTo2NS4wLjEwOC43OQ==";
+  "Basic MDMyMDAwMDAwOTozLjExMC4xMTEuMTk1";
 
 export const checkBalance = async (accountNumber) => {
   // Only allow balance checking in production environment
