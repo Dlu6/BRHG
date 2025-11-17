@@ -157,10 +157,10 @@ module.exports = {
         WHATSAPP_METRICS_RETENTION_DAYS: "90",
         WHATSAPP_PERFORMANCE_TRACKING: "true",
 
-        // Trunk Provider Configuration
-        TRUNK_PROVIDER_AUTH_HEADER: "MDMyMDAwMDAwODoxMy4yMzQuMTguMg==",
-        TRUNK_PROVIDER_VALIDATE_URL:
+        // Trunk Provider Configuration (for balance checking)
+        TRUNK_PROVIDER_API_URL:
           "https://ug.cyber-innovative.com:444/cyber-api/cyber_validate.php",
+        TRUNK_PROVIDER_AUTH_HEADER: "Basic MDMyMDAwMDAwOTozLjExMC4xMTEuMTk1",
 
         // SMS Provider Configuration
         SMS_PROVIDER_BASE_URL: "https://sms.cyber-innovative.com/secure",
