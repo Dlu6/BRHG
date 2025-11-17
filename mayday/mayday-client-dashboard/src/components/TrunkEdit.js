@@ -1244,7 +1244,7 @@ const AccountTabContent = ({
           }}
         >
           <Typography variant="subtitle1" gutterBottom>
-            Account BalanceX
+            Account Balance
           </Typography>
           {balanceLoading ? (
             <Box display="flex" alignItems="center" gap={1}>
