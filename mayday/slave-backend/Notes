@@ -1,0 +1,3 @@
+To start the slave server in dev;
+/Users/Mydhe Files/BRHG/mayday/slave-backend
+bash-3.2$ npm run dev
