@@ -260,7 +260,7 @@ const LoginElectron = ({ onLoginSuccess }) => {
         }
       })();
 
-      const isBackspaceDomain = /(^|\.)cs.backspace.ug\.com$/i.test(hostname);
+      const isBackspaceDomain = /(^|\.)backspace\.ug$/i.test(hostname);
       const apiBasePath =
         process.env.NODE_ENV === "development"
           ? "/api"
@@ -400,10 +400,10 @@ const LoginElectron = ({ onLoginSuccess }) => {
         // Use remote URL preference if set, otherwise default based on NODE_ENV
         const useRemote = localStorage.getItem("useRemoteUrl") === "true";
         const base = useRemote
-          ? "https://cs.backspace.ug/mayday-api"
+          ? "https://cs.backspace.ug"
           : process.env.NODE_ENV === "development"
           ? "http://localhost:8004"
-          : "https://cs.backspace.ug/mayday-api";
+          : "https://cs.backspace.ug";
 
         // In development, our backend runs without the /mayday-api prefix.
         const notifyUrl = `${base}${

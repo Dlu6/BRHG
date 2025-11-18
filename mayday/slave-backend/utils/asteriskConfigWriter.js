@@ -685,8 +685,9 @@ export const updateAsteriskConfig = async () => {
       "../models/networkConfigModel.js"
     );
 
-    // Force database sync to ensure we have latest schema
-    await sequelize.sync();
+    // Note: Removed sequelize.sync() as it was causing foreign key constraint errors
+    // when trying to sync unrelated tables (like emails) during network config updates.
+    // The tables should already exist from the initial migration.
 
     // Clear any potential caches and force fresh queries
     const externIps = await ExternIp.findAll({
