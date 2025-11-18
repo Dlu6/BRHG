@@ -1,3 +1,8 @@
 To start the slave server in dev;
 /Users/Mydhe Files/BRHG/mayday/slave-backend
 bash-3.2$ npm run dev
+
+# The master server has to also be running even in development
+pwd
+/Users/Mydhe Files/BRHG/mayday
+bash-3.2$ npm run master_client_server
