@@ -152,15 +152,20 @@ export const setupEmailAssociations = (
   { UserModel, CustomerModel = null, TicketModel = null }
 ) => {
   // Email belongs to User (creator/sender)
+  // Using constraints: false because User.id is UUID but Email.userId is STRING(36)
+  // This allows the association without creating database-level foreign key constraints
   Email.belongsTo(UserModel, {
     foreignKey: "userId",
     as: "user",
+    constraints: false, // Disable FK constraint to prevent sync errors
   });
 
   // Email belongs to User (assigned agent)
+  // Using constraints: false because User.id is UUID but Email.agentId is STRING(36)
   Email.belongsTo(UserModel, {
     foreignKey: "agentId",
     as: "agent",
+    constraints: false, // Disable FK constraint to prevent sync errors
   });
 
   // Email belongs to Customer (if applicable)

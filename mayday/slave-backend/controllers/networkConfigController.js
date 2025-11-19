@@ -149,17 +149,33 @@ export const deleteExternIp = async (req, res) => {
         .status(404)
         .json({ success: false, error: "ExternIp not found" });
     }
+    
+    // Delete from database first
     await externIp.destroy({ transaction });
-    await updateAsteriskConfig();
-    // Force update PJSIP transport configurations with new external IP
-    await forceUpdatePJSIPTransports();
     await transaction.commit();
+    
+    // Update config files after successful database deletion
+    // These operations should not block the response if they fail
+    try {
+      await updateAsteriskConfig();
+      await forceUpdatePJSIPTransports();
+      console.log("✅ Asterisk config updated after ExternIp deletion");
+    } catch (configError) {
+      console.error("⚠️ Asterisk config update failed after ExternIp deletion:", configError);
+      // Don't fail the request - database deletion was successful
+      // The config files can be regenerated later or manually
+    }
+    
     res
       .status(200)
       .json({ success: true, message: "ExternIp deleted successfully" });
   } catch (error) {
     await transaction.rollback();
-    res.status(500).json({ success: false, error: error.message });
+    console.error("ExternIp deletion error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || "Failed to delete ExternIp"
+    });
   }
 };
 
@@ -218,11 +234,20 @@ export const deleteStun = async (req, res) => {
         .status(404)
         .json({ success: false, error: "Stun server not found" });
     }
+    
+    // Delete from database first
     await stun.destroy({ transaction });
-    // First commit the transaction
     await transaction.commit();
-    // Then update the RTP config
-    await updateRTPConfig();
+    
+    // Update config files after successful database deletion
+    try {
+      await updateRTPConfig();
+      console.log("✅ RTP config updated after STUN deletion");
+    } catch (configError) {
+      console.error("⚠️ RTP config update failed after STUN deletion:", configError);
+      // Don't fail the request - database deletion was successful
+    }
+    
     res
       .status(200)
       .json({ success: true, message: "Stun server deleted successfully" });
@@ -287,11 +312,20 @@ export const deleteTurn = async (req, res) => {
         .status(404)
         .json({ success: false, error: "Turn server not found" });
     }
+    
+    // Delete from database first
     await turn.destroy({ transaction });
-    // First commit the transaction
     await transaction.commit();
-    // Then update the RTP config
-    await updateRTPConfig();
+    
+    // Update config files after successful database deletion
+    try {
+      await updateRTPConfig();
+      console.log("✅ RTP config updated after TURN deletion");
+    } catch (configError) {
+      console.error("⚠️ RTP config update failed after TURN deletion:", configError);
+      // Don't fail the request - database deletion was successful
+    }
+    
     res
       .status(200)
       .json({ success: true, message: "Turn server deleted successfully" });
@@ -429,9 +463,20 @@ export const deleteLocalNet = async (req, res) => {
         .status(404)
         .json({ success: false, error: "Local network not found" });
     }
+    
+    // Delete from database first
     await localNet.destroy({ transaction });
-    await updateAsteriskConfig();
     await transaction.commit();
+    
+    // Update config files after successful database deletion
+    try {
+      await updateAsteriskConfig();
+      console.log("✅ Asterisk config updated after LocalNet deletion");
+    } catch (configError) {
+      console.error("⚠️ Asterisk config update failed after LocalNet deletion:", configError);
+      // Don't fail the request - database deletion was successful
+    }
+    
     res
       .status(200)
       .json({ success: true, message: "Local network deleted successfully" });

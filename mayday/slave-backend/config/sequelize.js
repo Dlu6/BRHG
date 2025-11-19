@@ -48,7 +48,9 @@ const requiredEnvVars = [
   // DB_PASSWORD intentionally not required to support passwordless local/root
   "DB_NAME",
 ];
-const missingEnvVars = requiredEnvVars.filter((varName) => !process.env[varName]);
+const missingEnvVars = requiredEnvVars.filter(
+  (varName) => !process.env[varName]
+);
 
 if (missingEnvVars.length > 0) {
   throw new Error(
@@ -59,23 +61,28 @@ if (missingEnvVars.length > 0) {
 const { Op } = Sequelize;
 
 // Create Sequelize instance
-const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASSWORD || "", {
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  dialect: "mysql",
-  logging: false, // Disable SQL logging
-  pool: {
-    max: 5,
-    min: 0,
-    acquire: 30000,
-    idle: 10000,
-  },
-  define: {
-    timestamps: true,
-    underscored: false,
-    freezeTableName: true,
-  },
-});
+const sequelize = new Sequelize(
+  process.env.DB_NAME,
+  process.env.DB_USER,
+  process.env.DB_PASSWORD || "",
+  {
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    dialect: "mysql",
+    logging: false, // Disable SQL logging
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000,
+    },
+    define: {
+      timestamps: true,
+      underscored: false,
+      freezeTableName: true,
+    },
+  }
+);
 
 export { sequelize, Op };
 
@@ -126,7 +133,11 @@ export const syncDatabase = async () => {
       FingerprintHistory,
       ClientSession,
     } = await import("../models/licenseModel.js");
-    const SmsMessage = (await import("../models/SmsMessage.js")).default; // Import the new model
+    const SmsMessage = (await import("../models/SmsMessage.js")).default;
+    const { ExternIp, Stun, Turn, LocalNet } = await import(
+      "../models/networkConfigModel.js"
+    );
+    const { EmailModel } = await import("../models/emailModel.js");
 
     // Single transaction for all DDL
     const tx = await sequelize.transaction();
@@ -184,6 +195,16 @@ export const syncDatabase = async () => {
 
       // SMS
       await SmsMessage.sync({ force: false, transaction: tx }); // Sync the new model
+
+      // Network Configuration models
+      await ExternIp.sync({ force: false, transaction: tx });
+      await Stun.sync({ force: false, transaction: tx });
+      await Turn.sync({ force: false, transaction: tx });
+      await LocalNet.sync({ force: false, transaction: tx });
+
+      // Email model - note: uses constraints: false for associations
+      const Email = EmailModel(sequelize);
+      await Email.sync({ force: false, transaction: tx });
 
       await tx.commit();
       console.log("Database synchronized successfully");
