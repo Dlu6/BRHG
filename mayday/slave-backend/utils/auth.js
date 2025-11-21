@@ -77,8 +77,80 @@ export const generateToken = (user) => {
       extension: user.extension,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "24h" }
+    { expiresIn: "8h" } // Updated from 24h to 8h for access tokens
   );
+};
+
+export const generateRefreshToken = (userId) => {
+  return jwt.sign(
+    {
+      userId,
+      type: "refresh",
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" } // Refresh tokens last 7 days
+  );
+};
+
+export const generateTokenPair = (user) => {
+  const accessToken = generateToken(user);
+  const refreshToken = generateRefreshToken(user.id);
+  return { accessToken, refreshToken };
+};
+
+export const verifyRefreshToken = (token) => {
+  try {
+    if (!token) {
+      throw new Error("No refresh token provided");
+    }
+
+    // Handle Bearer prefix if present
+    const actualToken = token.startsWith("Bearer ")
+      ? token.split(" ")[1]
+      : token;
+
+    // Verify the refresh token
+    const decoded = jwt.verify(actualToken, process.env.JWT_SECRET);
+
+    // Verify it's a refresh token
+    if (decoded.type !== "refresh") {
+      throw new Error("Invalid token type");
+    }
+
+    return decoded;
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      throw new Error("Refresh token has expired");
+    }
+    throw new Error(`Invalid refresh token: ${error.message}`);
+  }
+};
+
+export const parseJwtPayload = (token) => {
+  try {
+    if (!token) {
+      return null;
+    }
+
+    // Handle Bearer prefix if present
+    const actualToken = token.startsWith("Bearer ")
+      ? token.split(" ")[1]
+      : token;
+
+    // Decode without verification to get payload
+    const parts = actualToken.split(".");
+    if (parts.length !== 3) {
+      throw new Error("Invalid token structure");
+    }
+
+    const payload = JSON.parse(
+      Buffer.from(parts[1], "base64").toString("utf8")
+    );
+    return payload;
+  } catch (error) {
+    console.error("Failed to parse JWT payload:", error);
+    return null;
+  }
 };
 
 export const authMiddlewareMain = async (req, res, next) => {

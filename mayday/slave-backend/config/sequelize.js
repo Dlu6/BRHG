@@ -138,12 +138,14 @@ export const syncDatabase = async () => {
       "../models/networkConfigModel.js"
     );
     const { EmailModel } = await import("../models/emailModel.js");
+    const RefreshToken = (await import("../models/refreshTokenModel.js")).default;
 
     // Single transaction for all DDL
     const tx = await sequelize.transaction();
     try {
       // Base tables
       await UserModel.sync({ force: false, transaction: tx });
+      await RefreshToken.sync({ force: false, transaction: tx });
       await PJSIPAuth.sync({ force: false, transaction: tx });
       await PJSIPAor.sync({ force: false, transaction: tx });
       await PJSIPTransport.sync({ force: false, transaction: tx });

@@ -1,6 +1,8 @@
 import { EventEmitter } from "events";
 import { io } from "socket.io-client";
 import logoutManager from "./logoutManager";
+import tokenManager from "./tokenManager";
+import authApi from "./api/authApi";
 
 class WebSocketService extends EventEmitter {
   constructor() {
@@ -128,6 +130,39 @@ class WebSocketService extends EventEmitter {
       return false;
     }
 
+    // Check if token needs refresh before connecting
+    if (tokenManager.shouldRefreshToken(token)) {
+      console.log("🔄 WebSocket: Token needs refresh before connecting");
+      try {
+        const refreshToken = this.getRefreshToken();
+        if (!refreshToken) {
+          console.error("❌ WebSocket: No refresh token available");
+          this.emit("connection:auth_required");
+          return false;
+        }
+
+        // Attempt token refresh
+        const result = await authApi.refreshToken(refreshToken);
+        
+        // Update stored tokens
+        this.setAuthToken(result.token);
+        this.setRefreshToken(result.refreshToken);
+
+        console.log("✅ WebSocket: Token refreshed before connection");
+      } catch (error) {
+        console.error("❌ WebSocket: Token refresh failed before connection:", error);
+        
+        if (error.message === "REFRESH_TOKEN_EXPIRED") {
+          this.emit("connection:auth_failed", {
+            error: "Session expired",
+            requiresReLogin: true,
+          });
+          return false;
+        }
+        // Continue with old token and let server handle expiry
+      }
+    }
+
     try {
       this.isConnecting = true;
       this.isReconnecting = false;
@@ -251,10 +286,17 @@ class WebSocketService extends EventEmitter {
         console.error(
           "❌ Authentication failed - token may be invalid or expired"
         );
-        this.emit("connection:auth_failed", {
-          error: error.message,
-          requiresReLogin: true,
-        });
+        
+        // Attempt token refresh if token expired
+        if (error.message.includes("Token has expired")) {
+          console.log("🔄 WebSocket: Attempting token refresh after expiry error");
+          this.attemptTokenRefreshAndReconnect();
+        } else {
+          this.emit("connection:auth_failed", {
+            error: error.message,
+            requiresReLogin: true,
+          });
+        }
       }
 
       this.handleConnectionFailure(error.message || "WebSocket error");
@@ -583,6 +625,63 @@ class WebSocketService extends EventEmitter {
     }
 
     return Math.max(0, score);
+  }
+
+  // Helper methods for token management
+  getRefreshToken() {
+    return (
+      localStorage.getItem("refreshToken") || sessionStorage.getItem("refreshToken")
+    );
+  }
+
+  setAuthToken(token) {
+    const cleanToken = token.replace("Bearer ", "");
+    localStorage.setItem("authToken", cleanToken);
+  }
+
+  setRefreshToken(token) {
+    localStorage.setItem("refreshToken", token);
+  }
+
+  // Attempt token refresh and reconnect
+  async attemptTokenRefreshAndReconnect() {
+    try {
+      const refreshToken = this.getRefreshToken();
+      if (!refreshToken) {
+        console.error("❌ WebSocket: No refresh token available for refresh");
+        this.emit("connection:auth_failed", {
+          error: "No refresh token",
+          requiresReLogin: true,
+        });
+        return;
+      }
+
+      console.log("🔄 WebSocket: Refreshing token...");
+      const result = await authApi.refreshToken(refreshToken);
+
+      // Update stored tokens
+      this.setAuthToken(result.token);
+      this.setRefreshToken(result.refreshToken);
+
+      console.log("✅ WebSocket: Token refreshed, attempting reconnect");
+
+      // Disconnect and reconnect with new token
+      this.disconnect();
+      
+      // Wait a bit before reconnecting
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      await this.connect();
+    } catch (error) {
+      console.error("❌ WebSocket: Token refresh and reconnect failed:", error);
+      
+      if (error.message === "REFRESH_TOKEN_EXPIRED") {
+        this.emit("connection:auth_failed", {
+          error: "Session expired",
+          requiresReLogin: true,
+        });
+      }
+    }
   }
 
   // Cleanup

@@ -28,6 +28,20 @@ export const clearAuthToken = () => {
   localStorage.removeItem("authToken");
 };
 
+// Refresh token functions
+export const setRefreshToken = (token) => {
+  // Store refresh token securely
+  localStorage.setItem("refreshToken", token);
+};
+
+export const getRefreshToken = () => {
+  return localStorage.getItem("refreshToken");
+};
+
+export const removeRefreshToken = () => {
+  localStorage.removeItem("refreshToken");
+};
+
 // User settings functions
 export const saveUserSettings = (settings) => {
   localStorage.setItem("userSettings", JSON.stringify(settings));
@@ -68,6 +82,7 @@ export const clear = () => {
   localStorage.removeItem("mongoToken");
   localStorage.removeItem("userSettings");
   localStorage.removeItem("userData");
+  localStorage.removeItem("refreshToken"); // Clear refresh token on logout
 };
 
 // Add these new functions
@@ -147,6 +162,9 @@ export const storageService = {
   setAuthToken,
   getAuthToken,
   clearAuthToken,
+  setRefreshToken,
+  getRefreshToken,
+  removeRefreshToken,
   saveUserSettings,
   getUserSettings,
   setUserData,

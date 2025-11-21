@@ -13,12 +13,15 @@ import {
   pauseAgent,
   unpauseAgent,
   getAgentPauseStatus,
+  refreshAccessToken,
 } from "../controllers/usersController.js";
 import { sipAuthMiddleware } from "../middleware/sipAuth.js";
 
 const router = express.Router();
 
 router.post("/login", superUserLogin);
+
+router.post("/refresh-token", refreshAccessToken);
 
 router.post("/agent-login", sipAuthMiddleware, registerAgent);
 

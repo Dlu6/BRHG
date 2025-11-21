@@ -11,13 +11,18 @@ pwd
 To push to production, the client is on netlify under www.maydaycrm.com project. Build is automatic since it's linked to the repo
 ~ The provisioning server is on heroku using a mono repo build. So we just have to trigger a build from the master branch using heroku's UI
 
-TO START BOTH BRHG SYSTEM AND CALL CENTER
-~ Open two terminals
-**_ In one, run cd "/Users/Mydhe Files/BRHG" && npm run callcenter || Starts callcenter backend and client
-_** In another, run "npm run server_client_hugamara"
+TO START BRHG MAYDAY CALL CENTER IN DEVELOPMENT
+~ cd "/Users/Mydhe Files/BRHG"
+~ npm run dev
+(Starts all three services: provisioning backend, slave-backend, and dashboard frontend)
+
+TO START SERVICES INDIVIDUALLY:
+~ npm run dev:provisioning (Provisioning backend on port 8001)
+~ npm run dev:backend (Slave-backend/Call center backend)
+~ npm run dev:frontend (Dashboard frontend on http://localhost:3002/callcenter)
 
 DEPLOYING TO THE VM IN PRODUCTION
-we connect using;
+We connect using:
 ~ matovumedhi@Dlus-MacBook-Pro Downloads % pwd
 /Users/matovumedhi/Downloads
 matovumedhi@Dlus-MacBook-Pro Downloads % ssh -i "brhg_mayday.pem" admin@ec2-3-110-111-195.ap-south-1.compute.amazonaws.com
@@ -27,9 +32,9 @@ matovumedhi@Dlus-MacBook-Pro Downloads % ssh -i "brhg_mayday.pem" admin@ec2-3-11
 cd /home/admin/hugamara-portal && git pull && npm run deploy
 
 Notes:
-~ npm run deploy will: - install prod deps for backends - build hospitality client and callcenter dashboard - validate/reload nginx if config present - restart PM2 apps: hugamara-backend and mayday-callcenter-backend
+~ npm run deploy will: - install prod deps for backends - build callcenter dashboard - validate/reload nginx if config present - restart PM2 apps: mayday-callcenter-backend
 ~ Check processes/logs - pm2 status - pm2 logs
 ~ nginx is running from /etc/nginx/sites-available/hugamara
-~ ecosystem.config.js is where production environment variables are saved (not .env). Only the frontend dashboards use .env (REACT*APP*\*)
+~ ecosystem.config.js is where production environment variables are saved (not .env). Only the frontend dashboard uses .env (REACT*APP*\*)
 ~ Database: mayday-callcenter-backend uses 'root' user for asterisk database, not 'hugamara_user'
 ~ If needed, you can run the script directly: bash ./deploy-vm.sh

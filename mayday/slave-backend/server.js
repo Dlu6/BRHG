@@ -34,6 +34,7 @@ import sequelize, { syncDatabase } from "./config/sequelize.js";
 import contextRoutes from "./routes/contextRoutes.js";
 import UserModel from "./models/usersModel.js";
 import authRoutes from "./routes/UsersRoute.js";
+import refreshTokenService from "./services/refreshTokenService.js";
 // import sipRoutes from "./routes/sipRoutes.js";
 // import asteriskRoutes from "./routes/asteriskRoute.mjs";
 import trunkRoutes from "./routes/trunkRoute.mjs";
@@ -775,6 +776,45 @@ const initializeApp = async () => {
     //   console.error(chalk.red("✗ Failed to start FastAGI Server:"), error);
     //   console.error(chalk.red("Stack trace:"), error.stack);
     // }
+
+    // Schedule refresh token cleanup job (runs every 24 hours)
+    const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    console.log(chalk.blue("🔄 Scheduling refresh token cleanup job..."));
+
+    // Run cleanup immediately on startup
+    try {
+      const cleanedCount = await refreshTokenService.cleanupExpiredTokens();
+      console.log(
+        chalk.green(
+          `✓ Initial cleanup: Removed ${cleanedCount} expired refresh tokens`
+        )
+      );
+    } catch (error) {
+      console.error(chalk.red("✗ Initial cleanup failed:"), error);
+    }
+
+    // Schedule recurring cleanup
+    const cleanupInterval = setInterval(async () => {
+      try {
+        console.log(
+          chalk.blue("🔄 Running scheduled refresh token cleanup...")
+        );
+        const cleanedCount = await refreshTokenService.cleanupExpiredTokens();
+        console.log(
+          chalk.green(
+            `✓ Cleanup complete: Removed ${cleanedCount} expired refresh tokens`
+          )
+        );
+      } catch (error) {
+        console.error(chalk.red("✗ Scheduled cleanup failed:"), error);
+      }
+    }, CLEANUP_INTERVAL);
+
+    // Store cleanup interval for graceful shutdown
+    global.refreshTokenCleanupInterval = cleanupInterval;
+    console.log(
+      chalk.green(`✓ Refresh token cleanup scheduled (every 24 hours)`)
+    );
   } catch (error) {
     console.error(chalk.red("✗ Failed to initialize app:"), error);
     process.exit(1);
@@ -785,6 +825,12 @@ async function cleanup() {
   console.log("Starting server cleanup...");
 
   try {
+    // Clear refresh token cleanup interval
+    if (global.refreshTokenCleanupInterval) {
+      clearInterval(global.refreshTokenCleanupInterval);
+      console.log("Refresh token cleanup interval cleared");
+    }
+
     // Stop cache cleanup service
     stopCacheCleanupService();
     console.log("Cache cleanup service stopped");
