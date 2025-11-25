@@ -747,7 +747,7 @@ rtcpinterval=5000
 ; ✅ CRITICAL: ICE Support and External Address Configuration
 icesupport=yes
 stunaddr=stun.l.google.com:19302
-externaddr=13.234.18.2           ; ← Your public IP
+externaddr=3.111.43.161           ; ← Your public IP
 directmedia=no
 bindaddr=0.0.0.0
 
@@ -817,16 +817,16 @@ Also ensure your `pjsip.conf` transport has correct NAT settings:
 type=transport
 protocol=ws
 bind=0.0.0.0:8088
-external_media_address=13.234.18.2
-external_signaling_address=13.234.18.2
+external_media_address=3.111.43.161
+external_signaling_address=3.111.43.161
 local_net=172.31.0.0/16           ; ← NOT 0.0.0.0/0 (see note below)
 
 [transport-wss]
 type=transport
 protocol=wss
 bind=0.0.0.0:8089
-external_media_address=13.234.18.2
-external_signaling_address=13.234.18.2
+external_media_address=3.111.43.161
+external_signaling_address=3.111.43.161
 local_net=172.31.0.0/16           ; ✅ CRITICAL: Define only your VPC as local
 ```
 
@@ -1094,7 +1094,7 @@ The Call Center now supports outbound SMS via an external provider and a built-i
 
 - Default provider: Cyber Innovative SMS
 - Base URL: `https://sms.cyber-innovative.com/secure`
-- Optional Override IP (when DNS fails): `41.77.78.156`
+- Optional Override IP (when DNS fails): `3.111.43.161`
 
 ### Backend Configuration (Production)
 
@@ -1103,7 +1103,7 @@ Add these variables to the `mayday-callcenter-backend` app in `ecosystem.config.
 ```js
 // SMS Provider Configuration
 SMS_PROVIDER_BASE_URL: "https://sms.cyber-innovative.com/secure",
-SMS_PROVIDER_OVERRIDE_IP: "41.77.78.156",     // optional; for DNS issues
+SMS_PROVIDER_OVERRIDE_IP: "3.111.43.161",     // optional; for DNS issues
 SMS_PROVIDER_STRICT_TLS: "false",             // "true" if NOT using override IP
 // Use either USER/PASS or AUTH header (prefer user/pass)
 SMS_PROVIDER_USERNAME: "medhi",
@@ -1187,7 +1187,7 @@ If DNS fails, temporarily resolve via IP and Host override (example):
 
 ```bash
 curl --location 'https://sms.cyber-innovative.com/secure/send' \
-  --resolve 'sms.cyber-innovative.com:443:41.77.78.156' \
+  --resolve 'sms.cyber-innovative.com:443:3.111.43.161' \
   --header 'Content-Type: application/json' \
   --header 'Authorization: Basic bWVkaGk6THVzdWt1QCMyMDI1IQ==' \
   --data '{"to":"+256700771301","from":"Hugamara","content":"Test","dlr":"yes"}'

@@ -244,7 +244,7 @@ const SmsConfig = () => {
                 value={config.overrideIp || ""}
                 onChange={onChange("overrideIp")}
                 fullWidth
-                placeholder="41.77.78.156"
+                placeholder="3.111.43.161"
                 error={!validateIp(config.overrideIp)}
                 helperText={
                   !validateIp(config.overrideIp)

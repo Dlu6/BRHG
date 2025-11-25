@@ -5,11 +5,11 @@
       "args": [
         "-i",
         "~/Downloads/brhg_key_izimba.pem",
-        "admin@ec2-13-202-81-139.ap-south-1.compute.amazonaws.com"
+        "admin@ec2-3-111-43-161.ap-south-1.compute.amazonaws.com"
       ],
       "env": {
         "SSH_KEY_PATH": "~/Downloads/brhg_key_izimba.pem",
-        "EC2_HOST": "ec2-13-234-18-2.ap-south-1.compute.amazonaws.com",
+        "EC2_HOST": "ec2-3-111-43-161.ap-south-1.compute.amazonaws.com",
         "EC2_USER": "admin",
         "DOMAIN": "cs.brhgroup.co"
       },
@@ -20,7 +20,7 @@
       "args": [
         "-i",
         "~/Downloads/brhg_key_izimba.pem",
-        "admin@ec2-13-202-81-139.ap-south-1.compute.amazonaws.com",
+        "admin@ec2-3-111-43-161.ap-south-1.compute.amazonaws.com",
         "sudo mysql -uroot asterisk"
       ],
       "description": "Connect to Call Center DB (asterisk) as root via SSH"
@@ -30,7 +30,7 @@
       "args": [
         "-i",
         "/Users/matovumedhi/Downloads/brhg_key_izimba.pem",
-        "admin@ec2-13-202-81-139.ap-south-1.compute.amazonaws.com"
+        "admin@ec2-3-111-43-161.ap-south-1.compute.amazonaws.com"
       ],
       "env": {
         "SSH_KEY_PATH": "/Users/matovumedhi/Downloads/brhg_key_izimba.pem",

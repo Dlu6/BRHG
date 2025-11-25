@@ -74,7 +74,7 @@ export default defineConfig(({ mode }) => {
           ws: true,
         },
         "/ws": {
-          target: "ws://13.234.18.2:8088/ws",
+          target: "ws://3.111.43.161:8088/ws",
           ws: true,
           secure: false,
           changeOrigin: true,

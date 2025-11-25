@@ -5,7 +5,7 @@ const baseUrl =
   "https://ug.cyber-innovative.com:444/cyber-api/cyber_validate.php";
 
 // Server IP for authorization (can be overridden by env var)
-const serverIp = process.env.SERVER_PUBLIC_IP || "13.202.81.139";
+const serverIp = process.env.SERVER_PUBLIC_IP || "3.111.43.161";
 
 /**
  * Generate Basic Auth header for a specific account
