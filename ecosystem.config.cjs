@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: "brhg-callcenter-backend",
-      script: "./mayday/slave-backend/server.js",
+      script: "./mayday/mayday/slave-backend/server.js",
       cwd: "/home/admin/brhg-portal",
       instances: 1,
       exec_mode: "fork",
