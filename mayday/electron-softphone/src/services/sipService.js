@@ -2391,7 +2391,7 @@ export const sipCallService = {
       const apiHost =
         process.env.NODE_ENV === "development"
           ? "localhost:8004"
-          : "cs.backspace.ug";
+          : "cs.brhgroup.co";
       const apiProtocol =
         process.env.NODE_ENV === "development" ? "http" : "https";
 

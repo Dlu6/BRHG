@@ -10,6 +10,7 @@
     "*://*.morvenconsults.com/*",
     "http://localhost:3002/*",
     "https://cs.hugamara.com/*",
+    "https://cs.brhgroup.co/*",
     "*://*.hugamara.com/*",
     "*://*.zoho.com/*"
   ],
@@ -24,6 +25,7 @@
         "*://*.cs.morvenconsults.com/*",
         "http://localhost:3002/*",
         "https://cs.hugamara.com/*",
+        "https://cs.brhgroup.co/*",
         "*://*.hugamara.com/*"
       ],
       "js": ["content.js"]
@@ -52,6 +54,7 @@
       "http://localhost:3000/*",
       "http://localhost:3002/*",
       "https://cs.hugamara.com/*",
+      "https://cs.brhgroup.co/*",
       "*://*.hugamara.com/*"
     ]
   }

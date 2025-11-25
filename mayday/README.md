@@ -61,7 +61,7 @@ The Mayday Call Center system consists of two main components:
 
    ```ini
    # Example for mayday/slave-backend/.env
-   DB_HOST=cs.hugamara.com
+   DB_HOST=cs.brhgroup.co
    DB_PORT=3306
    DB_USER=root
    DB_PASSWORD=YOUR_ROOT_PASSWORD
@@ -84,7 +84,7 @@ The Mayday Call Center system consists of two main components:
 
 5. **Access the application:**
    - **Development**: http://localhost:3002
-   - **Production**: https://cs.backspace.ug/callcenter/
+   - **Production**: https://cs.brhgroup.co/callcenter/
    - **Login Credentials**:
      - Username: `admin`
      - Password: `Pasword@256`
@@ -192,7 +192,7 @@ Main Hugamara System          Mayday Call Center
 - **✅ React Routing Issue (CRITICAL)**: Fixed blank white screen in production by properly configuring React app with `homepage: "/callcenter/"` and updating nginx to serve static assets from correct paths
 - **✅ Static Assets Routing**: Fixed 404 errors for JavaScript, CSS, and other static files by adding proper nginx location blocks for `/static/` and individual assets
 - **✅ Nginx Configuration**: Updated nginx to properly handle SPA routing with correct `try_files` directives and asset serving
-- **✅ Production URL Structure**: Application now correctly serves at `https://cs.backspace.ug/callcenter/` with proper asset loading
+- **✅ Production URL Structure**: Application now correctly serves at `https://cs.brhgroup.co/callcenter/` with proper asset loading
 
 #### Dashboard Analytics Fixes (Oct 1, 2025)
 
@@ -760,8 +760,8 @@ dtlsenable=yes
 dtlsverify=no
 dtlssetup=actpass
 srtp_tag_32=yes
-dtlscertfile=/etc/letsencrypt/live/cs.hugamara.com/fullchain.pem
-dtlsprivatekey=/etc/letsencrypt/live/cs.hugamara.com/privkey.pem
+dtlscertfile=/etc/letsencrypt/live/cs.brhgroup.co/fullchain.pem
+dtlsprivatekey=/etc/letsencrypt/live/cs.brhgroup.co/privkey.pem
 ```
 
 **Apply Changes:**
@@ -1075,7 +1075,7 @@ The Chrome extension supports dynamic multi-tenant configuration:
 
 ```javascript
 // The extension automatically detects the current domain
-// For https://cs.hugamara.com → uses /mayday-api endpoints
+// For https://cs.brhgroup.co → uses /mayday-api endpoints
 // For https://client1.example.com → uses /api endpoints
 
 // Health check example:
@@ -1111,7 +1111,7 @@ SMS_PROVIDER_PASSWORD: "Lusuku@#2025!",
 // Alternatively:
 // SMS_PROVIDER_AUTH: "Basic bWVkaGk6THVzdWt1QCMyMDI1IQ==",
 SMS_DEFAULT_SENDER: "Hugamara",
-SMS_DLR_URL: "https://cs.hugamara.com/api/sms/dlr",
+SMS_DLR_URL: "https://cs.brhgroup.co/api/sms/dlr",
 ```
 
 Notes:
@@ -1171,7 +1171,7 @@ curl --location 'https://sms.cyber-innovative.com/secure/send' \
     "from":"Hugamara",
     "content":"This is a test message from Hugamara Mayday",
     "dlr":"yes",
-    "dlr-url":"https://cs.hugamara.com/api/sms/dlr",
+    "dlr-url":"https://cs.brhgroup.co/api/sms/dlr",
     "dlr-level":3
   }'
 ```
@@ -1265,9 +1265,9 @@ curl --location 'https://sms.cyber-innovative.com/secure/send' \
 
 The production deployment uses a specific URL structure:
 
-- **Main Dashboard**: `https://cs.backspace.ug/callcenter/`
-- **API Endpoints**: `https://cs.backspace.ug/mayday-api/api/`
-- **WebSocket**: `wss://cs.backspace.ug/socket.io/`
+- **Main Dashboard**: `https://cs.brhgroup.co/callcenter/`
+- **API Endpoints**: `https://cs.brhgroup.co/mayday-api/api/`
+- **WebSocket**: `wss://cs.brhgroup.co/socket.io/`
 
 ### Deployment Scripts
 
@@ -1313,7 +1313,7 @@ The React app is configured with:
 
 - Verify backend is running on port 5001
 - Check nginx proxy configuration for `/mayday-api/api/` path
-- Test backend health endpoint: `curl https://cs.backspace.ug/mayday-api/api/system/health`
+- Test backend health endpoint: `curl https://cs.brhgroup.co/mayday-api/api/system/health`
 
 #### Port Conflicts
 

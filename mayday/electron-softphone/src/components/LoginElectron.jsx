@@ -121,7 +121,7 @@ const LoginElectron = ({ onLoginSuccess }) => {
     host:
       process.env.NODE_ENV === "development"
         ? "http://localhost:8004"
-        : "https://cs.backspace.ug",
+        : "https://cs.brhgroup.co",
     email: "",
     password: "",
     rememberMe: false,
@@ -262,7 +262,7 @@ const LoginElectron = ({ onLoginSuccess }) => {
         }
       })();
 
-      const isBackspaceDomain = /(^|\.)backspace\.ug$/i.test(hostname);
+      const isBackspaceDomain = /(^|\.)brhgroup\.co$/i.test(hostname);
       const apiBasePath =
         process.env.NODE_ENV === "development"
           ? "/api"
@@ -362,7 +362,7 @@ const LoginElectron = ({ onLoginSuccess }) => {
         if (isLocalHost) {
           return `ws://${host}:8088/ws`;
         }
-        return `wss://cs.backspace.ug/ws`;
+        return `wss://cs.brhgroup.co/ws`;
       })();
 
       // console.log("🤣🤣🤣🤣🤣🤣SIP config:", {
@@ -423,10 +423,10 @@ const LoginElectron = ({ onLoginSuccess }) => {
         // Use remote URL preference if set, otherwise default based on NODE_ENV
         const useRemote = localStorage.getItem("useRemoteUrl") === "true";
         const base = useRemote
-          ? "https://cs.backspace.ug"
+          ? "https://cs.brhgroup.co"
           : process.env.NODE_ENV === "development"
           ? "http://localhost:8004"
-          : "https://cs.backspace.ug";
+          : "https://cs.brhgroup.co";
 
         // In development, our backend runs without the /mayday-api prefix.
         const notifyUrl = `${base}${

@@ -82,7 +82,7 @@ class WebSocketService extends EventEmitter {
     // Default to production URL for Electron or when window is not available
     // Extract base URL without /mayday-api path for Socket.IO
     const apiUrl =
-      import.meta.env?.VITE_API_URL || "https://cs.backspace.ug/mayday-api";
+      import.meta.env?.VITE_API_URL || "https://cs.brhgroup.co/mayday-api";
     return apiUrl.replace("/mayday-api", "");
   }
 
@@ -143,15 +143,18 @@ class WebSocketService extends EventEmitter {
 
         // Attempt token refresh
         const result = await authApi.refreshToken(refreshToken);
-        
+
         // Update stored tokens
         this.setAuthToken(result.token);
         this.setRefreshToken(result.refreshToken);
 
         console.log("✅ WebSocket: Token refreshed before connection");
       } catch (error) {
-        console.error("❌ WebSocket: Token refresh failed before connection:", error);
-        
+        console.error(
+          "❌ WebSocket: Token refresh failed before connection:",
+          error
+        );
+
         if (error.message === "REFRESH_TOKEN_EXPIRED") {
           this.emit("connection:auth_failed", {
             error: "Session expired",
@@ -286,10 +289,12 @@ class WebSocketService extends EventEmitter {
         console.error(
           "❌ Authentication failed - token may be invalid or expired"
         );
-        
+
         // Attempt token refresh if token expired
         if (error.message.includes("Token has expired")) {
-          console.log("🔄 WebSocket: Attempting token refresh after expiry error");
+          console.log(
+            "🔄 WebSocket: Attempting token refresh after expiry error"
+          );
           this.attemptTokenRefreshAndReconnect();
         } else {
           this.emit("connection:auth_failed", {
@@ -630,7 +635,8 @@ class WebSocketService extends EventEmitter {
   // Helper methods for token management
   getRefreshToken() {
     return (
-      localStorage.getItem("refreshToken") || sessionStorage.getItem("refreshToken")
+      localStorage.getItem("refreshToken") ||
+      sessionStorage.getItem("refreshToken")
     );
   }
 
@@ -667,14 +673,14 @@ class WebSocketService extends EventEmitter {
 
       // Disconnect and reconnect with new token
       this.disconnect();
-      
+
       // Wait a bit before reconnecting
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       await this.connect();
     } catch (error) {
       console.error("❌ WebSocket: Token refresh and reconnect failed:", error);
-      
+
       if (error.message === "REFRESH_TOKEN_EXPIRED") {
         this.emit("connection:auth_failed", {
           error: "Session expired",

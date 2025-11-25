@@ -9,7 +9,7 @@ echo "🚀 Starting BRHG deployment on EC2..."
 
 # Configurable variables
 PROJECT_DIR=/home/admin/brhg-portal
-DOMAIN=cs.backspace.ug
+DOMAIN=cs.brhgroup.co
 DB_ROOT_PASSWORD="Pasword@256"
 DB_APP_PASSWORD="Pasword@256"
 DB_NAME="asterisk"

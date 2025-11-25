@@ -38,7 +38,7 @@ const getEnv = (key, fallback = undefined) =>
     ? process.env[key]
     : fallback;
 const getAsteriskHost = () =>
-  getEnv("ASTERISK_HOST", getEnv("SLAVE_SERVER_DOMAIN", "cs.backspace.ug"));
+  getEnv("ASTERISK_HOST", getEnv("SLAVE_SERVER_DOMAIN", "cs.brhgroup.co"));
 export const superUserLogin = async (req, res) => {
   const { username, password } = req.body;
   try {

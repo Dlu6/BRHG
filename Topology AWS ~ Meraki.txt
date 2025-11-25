@@ -175,8 +175,8 @@ local_net=172.31.0.0/16
 local_net=10.241.244.0/30
 symmetric_transport=yes
 allow_reload=yes
-cert_file=/etc/letsencrypt/live/cs.backspace.ug/fullchain.pem
-priv_key_file=/etc/letsencrypt/live/cs.backspace.ug/privkey.pem
+cert_file=/etc/letsencrypt/live/cs.brhgroup.co/fullchain.pem
+priv_key_file=/etc/letsencrypt/live/cs.brhgroup.co/privkey.pem
 
 
 [BANDALI_RISE_HOSPITALITY_SIP]

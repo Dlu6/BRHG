@@ -693,7 +693,7 @@ const createSessionRecoveryManager = () => {
                 apiUrl:
                   process.env.NODE_ENV === "development"
                     ? "http://localhost:8004"
-                    : "https://cs.backspace.ug/mayday-api",
+                    : "https://cs.brhgroup.co/mayday-api",
                 token: token,
               });
 
@@ -860,13 +860,17 @@ const createSessionRecoveryManager = () => {
   const handleTokenRefresh = async () => {
     // Prevent concurrent refresh attempts
     if (state.isRefreshingToken) {
-      console.log("⏳ [SessionRecovery] Token refresh already in progress, skipping");
+      console.log(
+        "⏳ [SessionRecovery] Token refresh already in progress, skipping"
+      );
       return;
     }
 
     // Don't refresh during logout or recovery
     if (window.isLoggingOut || state.isRecovering) {
-      console.log("⚠️ [SessionRecovery] Skipping token refresh (logout or recovery in progress)");
+      console.log(
+        "⚠️ [SessionRecovery] Skipping token refresh (logout or recovery in progress)"
+      );
       return;
     }
 
@@ -918,8 +922,10 @@ const createSessionRecoveryManager = () => {
 
       // Check if refresh token expired
       if (error.message === "REFRESH_TOKEN_EXPIRED") {
-        console.error("❌ [SessionRecovery] Refresh token expired - session invalid");
-        
+        console.error(
+          "❌ [SessionRecovery] Refresh token expired - session invalid"
+        );
+
         // Stop token monitoring
         tokenManager.stopTokenMonitoring();
 
@@ -934,7 +940,9 @@ const createSessionRecoveryManager = () => {
           window.location.href = "/";
         }, 500);
       } else if (error.message === "NETWORK_ERROR") {
-        console.warn("⚠️ [SessionRecovery] Network error during token refresh, will retry");
+        console.warn(
+          "⚠️ [SessionRecovery] Network error during token refresh, will retry"
+        );
         // Token manager will retry on next interval
       } else {
         // Other errors - emit event but allow retry

@@ -40,6 +40,11 @@ const Login = ({ onLoginSuccess, onCancel }) => {
                 domain.endsWith(".hugamara.com")
               ) {
                 detectedHost = `${url.protocol}//cs.hugamara.com`;
+              } else if (
+                domain === "cs.brhgroup.co" ||
+                domain.endsWith(".brhgroup.co")
+              ) {
+                detectedHost = `${url.protocol}//cs.brhgroup.co`;
               }
               // Strategy 1: If it's localhost, map to common backend ports
               else if (domain === "localhost") {

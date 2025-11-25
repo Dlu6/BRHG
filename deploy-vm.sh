@@ -22,7 +22,7 @@ cd "$ROOT_DIR"
 info "Project root: $ROOT_DIR"
 
 # Frontend build-time variables for React builds
-: "${REACT_APP_CALL_CENTER_URL:=https://cs.backspace.ug/}"
+: "${REACT_APP_CALL_CENTER_URL:=https://cs.brhgroup.co/}"
 export REACT_APP_CALL_CENTER_URL
 info "REACT_APP_CALL_CENTER_URL=$REACT_APP_CALL_CENTER_URL"
 

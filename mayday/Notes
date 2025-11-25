@@ -25,7 +25,7 @@ DEPLOYING TO THE VM IN PRODUCTION
 We connect using:
 ~ matovumedhi@Dlus-MacBook-Pro Downloads % pwd
 /Users/matovumedhi/Downloads
-matovumedhi@Dlus-MacBook-Pro Downloads % ssh -i "brhg_mayday.pem" admin@ec2-3-110-111-195.ap-south-1.compute.amazonaws.com
+matovumedhi@Dlus-MacBook-Pro Downloads % ssh -i "brhg_key_izimba.pem" admin@ec2-13-202-81-139.ap-south-1.compute.amazonaws.com
 
 ~ sudo -i
 ~ Simple deploy (build frontends and restart PM2):

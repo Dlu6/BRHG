@@ -21,13 +21,13 @@ module.exports = {
         RECORDING_BASE_DIR: "/var/spool/asterisk/monitor",
 
         // SLAVE SERVER CONFIGURATION (THIS SERVER)
-        SLAVE_SERVER_URL: "https://cs.backspace.ug",
-        SLAVE_SERVER_API_URL: "https://cs.backspace.ug/mayday-api",
-        SLAVE_WEBSOCKET_URL: "wss://cs.backspace.ug",
-        SLAVE_SERVER_DOMAIN: "cs.backspace.ug",
+        SLAVE_SERVER_URL: "https://cs.brhgroup.co",
+        SLAVE_SERVER_API_URL: "https://cs.brhgroup.co/mayday-api",
+        SLAVE_WEBSOCKET_URL: "wss://cs.brhgroup.co",
+        SLAVE_SERVER_DOMAIN: "cs.brhgroup.co",
         // WebRTC/SIP hostnames for WSS registration
-        PUBLIC_IP: "cs.backspace.ug",
-        ASTERISK_HOST: "cs.backspace.ug",
+        PUBLIC_IP: "cs.brhgroup.co",
+        ASTERISK_HOST: "cs.brhgroup.co",
         ASTERISK_SIP_PORT: "8088",
 
         // Redis Configuration
@@ -125,7 +125,7 @@ module.exports = {
 
         // ========== WHATSAPP WEBHOOK CONFIGURATION ==========
         // Webhook endpoints for receiving WhatsApp messages
-        WHATSAPP_WEBHOOK_URL: "https://cs.backspace.ug/api/whatsapp/webhook",
+        WHATSAPP_WEBHOOK_URL: "https://cs.brhgroup.co/api/whatsapp/webhook",
         WHATSAPP_WEBHOOK_VERIFY_TOKEN: "your_webhook_verify_token",
 
         // ========== WHATSAPP MESSAGE CONFIGURATION ==========
@@ -171,7 +171,7 @@ module.exports = {
         SMS_PROVIDER_PASSWORD: "Mayday@#1759!",
         // SMS_PROVIDER_AUTH: "Basic bWVkaGk6THVzdWt1QCMyMDI1IQ==",
         SMS_DEFAULT_SENDER: "BRHG",
-        SMS_DLR_URL: "https://cs.backspace.ug/api/sms/dlr",
+        SMS_DLR_URL: "https://cs.brhgroup.co/api/sms/dlr",
       },
       error_file: "./logs/mayday-backend-error.log",
       out_file: "./logs/mayday-backend-out.log",

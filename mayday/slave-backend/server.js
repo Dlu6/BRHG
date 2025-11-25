@@ -1,23 +1,5 @@
 // server.js
 import express from "express";
-
-// Handle unhandled promise rejections to prevent server crashes
-process.on("unhandledRejection", (reason, promise) => {
-  console.warn(
-    chalk.yellow("⚠️ Unhandled Rejection at:"),
-    promise,
-    "reason:",
-    reason
-  );
-  console.log(chalk.blue("💡 Server will continue running despite this error"));
-  // Don't exit the process
-});
-
-process.on("uncaughtException", (error) => {
-  console.error(chalk.red("❌ Uncaught Exception:"), error);
-  console.log(chalk.blue("💡 Server will continue running despite this error"));
-  // Don't exit the process
-});
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -83,7 +65,7 @@ import { setupAssociations } from "./models/usersModel.js";
 import { setupIntegrationAssociations } from "./models/associations.js";
 import IntegrationModel from "./models/integrationModel.js";
 import IntegrationDataModel from "./models/integrationDataModel.js";
-import VoiceExtension from "./models/voiceExtensionModel.js";
+// import VoiceExtension from "./models/voiceExtensionModel.js"; // Removed as unused
 import {
   // LicenseType,
   // ServerLicense,
@@ -116,7 +98,7 @@ let io;
 
 // Set up CORS options
 const allowedOrigins = [
-  "https://cs.backspace.ug",
+  "https://cs.brhgroup.co",
   // Environment-based origins
   process.env.SLAVE_SERVER_URL,
   process.env.MASTER_SERVER_URL,
@@ -172,9 +154,9 @@ const corsOptions = {
     }
 
     // Always allow our public domain and subdomains
-    const backspacePattern =
-      /^https?:\/\/([\w-]+\.)*cs\.backspace\.ug\.com(?::\d+)?$/i;
-    if (backspacePattern.test(origin)) {
+    const brhgroupPattern =
+      /^https?:\/\/([\w-]+\.)*cs\.brhgroup\.co(?::\d+)?$/i;
+    if (brhgroupPattern.test(origin)) {
       callback(null, true);
       return;
     }

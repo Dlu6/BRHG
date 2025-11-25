@@ -16,7 +16,7 @@ const getApiUrl = () => {
   return (
     import.meta.env?.VITE_API_URL ||
     window.location.origin + "/mayday-api" ||
-    "https://cs.backspace.ug/mayday-api"
+    "https://cs.brhgroup.co/mayday-api"
   );
 };
 
@@ -65,7 +65,10 @@ export const refreshToken = async (refreshToken, fingerprint = null) => {
     console.error("❌ [AuthApi] Token refresh failed:", error);
 
     // Check if it's a refresh token expiry error
-    if (error.response?.status === 403 || error.response?.data?.requiresReLogin) {
+    if (
+      error.response?.status === 403 ||
+      error.response?.data?.requiresReLogin
+    ) {
       throw new Error("REFRESH_TOKEN_EXPIRED");
     }
 
@@ -150,4 +153,3 @@ export const authApi = {
 };
 
 export default authApi;
-

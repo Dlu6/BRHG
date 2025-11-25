@@ -95,7 +95,7 @@ const EmailView = ({ open, onClose }) => {
     user: "",
     password: "",
     from: "",
-    domain: "cs.backspace.ug",
+    domain: "cs.brhgroup.co",
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -307,7 +307,7 @@ const EmailView = ({ open, onClose }) => {
       filter === "all" ||
       (filter === "unread" && !email.isRead) ||
       (filter === "starred" && email.isStarred) ||
-      (filter === "sent" && (email.from || "").includes("cs.backspace.ug"));
+      (filter === "sent" && (email.from || "").includes("cs.brhgroup.co"));
 
     return matchesSearch && matchesFilter;
   });

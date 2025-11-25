@@ -637,8 +637,8 @@ export const generatePJSIPConfig = (
     bundle: "yes",
     webrtc: "yes",
     outbound_auth: extension,
-    dtls_cert_file: "/etc/letsencrypt/live/cs.backspace.ug/fullchain.pem",
-    dtls_private_key: "/etc/letsencrypt/live/cs.backspace.ug/privkey.pem",
+    dtls_cert_file: "/etc/letsencrypt/live/cs.brhgroup.co/fullchain.pem",
+    dtls_private_key: "/etc/letsencrypt/live/cs.brhgroup.co/privkey.pem",
     dtls_auto_generate_cert: "no",
   };
 
@@ -654,8 +654,8 @@ export const generatePJSIPConfig = (
       bundle: "yes",
       webrtc: "yes",
       dtls_auto_generate_cert: "no",
-      tls_cert_file: "/etc/letsencrypt/live/cs.backspace.ug/fullchain.pem",
-      dtls_private_key: "/etc/letsencrypt/live/cs.backspace.ug/privkey.pem",
+      tls_cert_file: "/etc/letsencrypt/live/cs.brhgroup.co/fullchain.pem",
+      dtls_private_key: "/etc/letsencrypt/live/cs.brhgroup.co/privkey.pem",
     });
   }
 

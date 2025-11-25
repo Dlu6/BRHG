@@ -1698,10 +1698,9 @@ This section outlines the definitive steps to deploy both applications to a prod
 
 ### Final URL Mapping
 
-- `https://cs.hugamara.com/` → Serves the **Hospitality Frontend**.
-- `https://cs.hugamara.com/callcenter/` → Serves the **Call Center Frontend**.
-- `https://cs.hugamara.com/api/` → Proxies to the **Hospitality Backend** on `localhost:5000`.
-- `https://cs.hugamara.com/mayday-api/` → Proxies to the **Call Center Backend** on `localhost:5001`.
+- `https://cs.brhg.co` → Serves the **Call Center Frontend**.
+- `https://cs.brhg.co/api/` → Proxies to the **Hospitality Backend** on `localhost:5000`.
+- `https://cs.brhgroup.co/mayday-api/` → Proxies to the **Call Center Backend** on `localhost:5001`.
 
 ### Backends and Databases
 
@@ -1801,16 +1800,16 @@ The main nginx configuration lives at `/etc/nginx/sites-available/hugamara` (sym
 ```nginx
 server {
     listen 80;
-    server_name cs.hugamara.com;
+    server_name cs.brhgroup.co;
     return 301 https://$server_name$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name cs.hugamara.com;
+    server_name cs.brhgroup.co;
 
-    ssl_certificate /etc/letsencrypt/live/cs.hugamara.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/cs.hugamara.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/cs.brhgroup.co/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/cs.brhgroup.co/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384;
     ssl_prefer_server_ciphers off;
@@ -1820,7 +1819,7 @@ server {
     add_header X-XSS-Protection "1; mode=block" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "no-referrer-when-downgrade" always;
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' wss://cs.hugamara.com wss://cs.hugamara.com:8000 wss://cs.hugamara.com:8089;" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' wss://cs.brhgroup.co wss://cs.brhgroup.co:8000 wss://cs.brhgroup.co:8089;" always;
 
     gzip on;
     gzip_vary on;
@@ -1933,7 +1932,7 @@ GRANT ALL PRIVILEGES ON hugamara_db.* TO 'hugamara_user'@'localhost'; FLUSH PRIV
 
 ```bash
 sudo systemctl stop nginx
-sudo certbot certonly --standalone -d cs.hugamara.com --non-interactive --agree-tos -m admin@hugamara.com
+sudo certbot certonly --standalone -d cs.brhgroup.co --non-interactive --agree-tos -m admin@hugamara.com
 sudo systemctl start nginx
 sudo nginx -t && sudo systemctl reload nginx
 ```
@@ -2083,7 +2082,6 @@ ALTER TABLE ps_endpoint_id_ips ADD CONSTRAINT fk_endpoint_id FOREIGN KEY (endpoi
 
 This project is proprietary software for Hugamara Hospitality Group.
 
-
 ## Mayday Unified Outbound Dialplan (file-based)
 
 This repository includes a lean, file-based outbound helper and prefix routing that the provider requires (dynamic From via P-Preferred-Identity). The canonical config is stored here:
@@ -2091,11 +2089,13 @@ This repository includes a lean, file-based outbound helper and prefix routing t
 - docs/asterisk/extensions_mayday_context.conf
 
 Key behavior:
+
 - 2-digit DID prefix (last two digits) selects Caller ID explicitly, then dials: `_4[3-9]X.` → `45 0700…` uses `0323300245`, etc.
 - No prefix: uses `DEFAULT_DID` if set, else falls back to `DEFAULT_DID_FALLBACK=0323300243`.
 - The outbound helper `outbound-dial` normalizes destination to national (07…), sets CLI, and adds P-Preferred-Identity to drive dynamic From.
 
 Recommended deployment on PBX:
+
 1. Copy the file to the server:
    - `/etc/asterisk/extensions_mayday_context.conf`
 2. Ensure it is included from `extensions.conf` (or your existing include chain), e.g.:
@@ -2107,6 +2107,6 @@ Recommended deployment on PBX:
    - `sudo asterisk -rx "dialplan show from-internal"`
 
 Provider alignment:
+
 - Uses `PJSIP_HEADER(add,P-Preferred-Identity)=<sip:${ARG2}@${TRUNK_DOMAIN}>` so the provider sees the DID as From identity even when the trunk has no `from_user` per DID.
 - Ensure the trunk endpoint (`Hugamara_Trunk`) permits identity headers and CLI presentation.
-
