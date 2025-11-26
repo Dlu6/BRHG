@@ -12,7 +12,7 @@ import { json } from "express";
 import redisClient, { initializeRedis } from "./config/redis.js";
 import RedisStore from "connect-redis";
 import bcrypt from "bcrypt";
-import sequelize, { syncDatabase } from "./config/sequelize.js";
+import sequelize, { syncDatabase, fixAsteriskSchema } from "./config/sequelize.js";
 import contextRoutes from "./routes/contextRoutes.js";
 import UserModel from "./models/usersModel.js";
 import authRoutes from "./routes/UsersRoute.js";
@@ -466,6 +466,9 @@ const initializeApp = async () => {
     await syncDatabase();
     // await CallRecords.sync();
     console.log(chalk.green("Database synchronized successfully"));
+
+    // Fix Asterisk PJSIP schema issues (e.g., ps_contacts.expiration_timestamp)
+    await fixAsteriskSchema();
 
     // Outbound helper is managed in file dialplan (extensions_mayday_context.conf)
 

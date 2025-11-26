@@ -27,7 +27,7 @@ const state = {
 
 async function connect(config) {
   // CRITICAL: Ensure all required configuration is present before proceeding
-  const server = config?.pjsip?.server;
+  let server = config?.pjsip?.server;
   const extension = config?.extension;
   const password = config?.pjsip?.password;
 
@@ -46,6 +46,13 @@ async function connect(config) {
   }
   if (!password) {
     throw new Error("PJSIP password is missing from configuration");
+  }
+
+  // In development mode, override remote server with localhost for local Asterisk
+  const isDevelopment = process.env.NODE_ENV === "development";
+  if (isDevelopment && server !== "localhost" && server !== "127.0.0.1") {
+    console.log(`🔧 Development mode: Overriding SIP server from "${server}" to "localhost"`);
+    server = "localhost";
   }
 
   // Build WebSocket URL based on environment (ignore config.pjsip.ws_servers as it may be an object)

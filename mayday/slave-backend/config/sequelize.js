@@ -227,4 +227,53 @@ export const syncDatabase = async () => {
   }
 };
 
+/**
+ * Fix Asterisk PJSIP schema issues that can cause registration failures.
+ * This ensures the ps_contacts table has nullable expiration_timestamp field.
+ */
+export const fixAsteriskSchema = async () => {
+  try {
+    console.log("🔧 Checking Asterisk PJSIP schema...");
+    
+    // Check if ps_contacts table exists
+    const [tables] = await sequelize.query(
+      "SHOW TABLES LIKE 'ps_contacts'"
+    );
+    
+    if (tables.length === 0) {
+      console.log("ℹ️ ps_contacts table does not exist yet, skipping schema fix");
+      return;
+    }
+    
+    // Check the current column definition
+    const [columns] = await sequelize.query(
+      "SHOW COLUMNS FROM ps_contacts WHERE Field = 'expiration_timestamp'"
+    );
+    
+    if (columns.length === 0) {
+      // Column doesn't exist, add it
+      console.log("➕ Adding expiration_timestamp column to ps_contacts...");
+      await sequelize.query(
+        "ALTER TABLE ps_contacts ADD COLUMN expiration_timestamp DATETIME NULL DEFAULT NULL"
+      );
+      console.log("✅ expiration_timestamp column added");
+    } else {
+      // Column exists, check if it's nullable
+      const column = columns[0];
+      if (column.Null === 'NO') {
+        console.log("🔧 Fixing expiration_timestamp column to allow NULL...");
+        await sequelize.query(
+          "ALTER TABLE ps_contacts MODIFY COLUMN expiration_timestamp DATETIME NULL DEFAULT NULL"
+        );
+        console.log("✅ expiration_timestamp column fixed");
+      } else {
+        console.log("✅ ps_contacts.expiration_timestamp schema is correct");
+      }
+    }
+  } catch (error) {
+    // Log but don't throw - this is a non-critical fix
+    console.error("⚠️ Error fixing Asterisk schema (non-critical):", error.message);
+  }
+};
+
 export default sequelize;
