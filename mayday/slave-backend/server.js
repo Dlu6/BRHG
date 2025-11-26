@@ -119,6 +119,7 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:8004",
   "ws://localhost:8004",
+  `http://3.111.43.161`,
   `http://3.111.43.161:8004`,
   `ws://3.111.43.161:8004`,
   // `https://cs.lusuku.shop`,
