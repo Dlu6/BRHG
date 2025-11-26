@@ -150,10 +150,10 @@ const AgentEdit = () => {
         dtls_auto_generate_cert: "no",
         dtls_cert_file:
           agentDetails.dtls_cert_file ||
-          "/etc/letsencrypt/live/cs.backspace.ug/fullchain.pem",
+          "/etc/letsencrypt/live/cs.brhgroup.co/fullchain.pem",
         dtls_private_key:
           agentDetails.dtls_private_key ||
-          "/etc/letsencrypt/live/cs.backspace.ug/privkey.pem",
+          "/etc/letsencrypt/live/cs.brhgroup.co/privkey.pem",
         dtls_verify: agentDetails.dtls_verify || "fingerprint",
         media_encryption: agentDetails.media_encryption || "sdes",
         wss_port: agentDetails.wss_port || 8089,
@@ -290,8 +290,8 @@ const AgentEdit = () => {
             formAgentDetails.dtls_auto_generate_cert || "no",
 
           // Certificate paths when not auto-generating
-          dtls_cert_file: "/etc/letsencrypt/live/cs.backspace.ug/fullchain.pem",
-          dtls_private_key: "/etc/letsencrypt/live/cs.backspace.ug/privkey.pem",
+          dtls_cert_file: "/etc/letsencrypt/live/cs.brhgroup.co/fullchain.pem",
+          dtls_private_key: "/etc/letsencrypt/live/cs.brhgroup.co/privkey.pem",
           ice_support: formAgentDetails.ice_support || "yes",
           rewrite_contact: formAgentDetails.rewrite_contact || "yes",
           rtcp_mux: formAgentDetails.rtcp_mux || "yes",
@@ -1021,7 +1021,7 @@ const VoiceTabContent = ({
                   name="dtls_cert_file"
                   value={
                     formAgentDetails.dtls_cert_file ||
-                    "/etc/letsencrypt/live/cs.backspace.ug/fullchain.pem"
+                    "/etc/letsencrypt/live/cs.brhgroup.co/fullchain.pem"
                   }
                   onChange={handleInputChange}
                   variant="standard"
@@ -1041,7 +1041,7 @@ const VoiceTabContent = ({
                   name="dtls_private_key"
                   value={
                     formAgentDetails.dtls_private_key ||
-                    "/etc/letsencrypt/live/cs.backspace.ug/privkey.pem"
+                    "/etc/letsencrypt/live/cs.brhgroup.co/privkey.pem"
                   }
                   onChange={handleInputChange}
                   variant="standard"

@@ -6,23 +6,6 @@ import { exec } from "child_process";
 import { promisify } from "util";
 const execAsync = promisify(exec);
 
-// Function to clear database cache and force fresh queries
-const clearDatabaseCache = async () => {
-  try {
-    // Force sequelize to reconnect and clear any internal caches
-    await sequelize.authenticate();
-
-    // Clear any potential query cache
-    if (sequelize.queryCache) {
-      sequelize.queryCache.clear();
-    }
-
-    console.log("🗑️ Database cache cleared");
-  } catch (error) {
-    console.warn("Could not clear database cache:", error.message);
-  }
-};
-
 // Function to create or update PJSIP transport configurations
 export const updatePJSIPTransports = async () => {
   try {
@@ -163,8 +146,8 @@ verify_client=no
 local_net=0.0.0.0/0
 symmetric_transport=yes
 allow_reload=yes
-cert_file=/etc/letsencrypt/live/cs.backspace.ug/fullchain.pem
-priv_key_file=/etc/letsencrypt/live/cs.backspace.ug/privkey.pem
+cert_file=/etc/letsencrypt/live/cs.brhgroup.co/fullchain.pem
+priv_key_file=/etc/letsencrypt/live/cs.brhgroup.co/privkey.pem
 `;
     }
 
@@ -311,8 +294,8 @@ verify_client=no
 local_net=0.0.0.0/0
 symmetric_transport=yes
 allow_reload=yes
-cert_file=/etc/letsencrypt/live/cs.backspace.ug/fullchain.pem
-priv_key_file=/etc/letsencrypt/live/cs.backspace.ug/privkey.pem
+cert_file=/etc/letsencrypt/live/cs.brhgroup.co/fullchain.pem
+priv_key_file=/etc/letsencrypt/live/cs.brhgroup.co/privkey.pem
 `;
 
     // Find the right place to insert (after [general] section if it exists)
@@ -677,16 +660,13 @@ export const updateAsteriskConfig = async () => {
     const networkConfigPath = "/etc/asterisk/mayday.d/pjsip_network.conf";
     const tempFile = "/tmp/mayday.conf";
 
-    // Clear database cache first
-    await clearDatabaseCache();
-
-    // Get all active configurations with cache clearing
+    // Get all active configurations
     const { ExternIp, LocalNet } = await import(
       "../models/networkConfigModel.js"
     );
 
-    // Force database sync to ensure we have latest schema
-    await sequelize.sync();
+    // Note: No need for sequelize.sync() here - tables already exist from startup
+    // This function only reads data and writes config files, no schema changes needed
 
     // Clear any potential caches and force fresh queries
     const externIps = await ExternIp.findAll({

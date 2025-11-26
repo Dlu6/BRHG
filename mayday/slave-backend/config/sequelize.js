@@ -48,7 +48,9 @@ const requiredEnvVars = [
   // DB_PASSWORD intentionally not required to support passwordless local/root
   "DB_NAME",
 ];
-const missingEnvVars = requiredEnvVars.filter((varName) => !process.env[varName]);
+const missingEnvVars = requiredEnvVars.filter(
+  (varName) => !process.env[varName]
+);
 
 if (missingEnvVars.length > 0) {
   throw new Error(
@@ -59,23 +61,28 @@ if (missingEnvVars.length > 0) {
 const { Op } = Sequelize;
 
 // Create Sequelize instance
-const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASSWORD || "", {
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  dialect: "mysql",
-  logging: false, // Disable SQL logging
-  pool: {
-    max: 5,
-    min: 0,
-    acquire: 30000,
-    idle: 10000,
-  },
-  define: {
-    timestamps: true,
-    underscored: false,
-    freezeTableName: true,
-  },
-});
+const sequelize = new Sequelize(
+  process.env.DB_NAME,
+  process.env.DB_USER,
+  process.env.DB_PASSWORD || "",
+  {
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    dialect: "mysql",
+    logging: false, // Disable SQL logging
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000,
+    },
+    define: {
+      timestamps: true,
+      underscored: false,
+      freezeTableName: true,
+    },
+  }
+);
 
 export { sequelize, Op };
 
@@ -126,13 +133,19 @@ export const syncDatabase = async () => {
       FingerprintHistory,
       ClientSession,
     } = await import("../models/licenseModel.js");
-    const SmsMessage = (await import("../models/SmsMessage.js")).default; // Import the new model
+    const SmsMessage = (await import("../models/SmsMessage.js")).default;
+    const { ExternIp, Stun, Turn, LocalNet } = await import(
+      "../models/networkConfigModel.js"
+    );
+    const { EmailModel } = await import("../models/emailModel.js");
+    const RefreshToken = (await import("../models/refreshTokenModel.js")).default;
 
     // Single transaction for all DDL
     const tx = await sequelize.transaction();
     try {
       // Base tables
       await UserModel.sync({ force: false, transaction: tx });
+      await RefreshToken.sync({ force: false, transaction: tx });
       await PJSIPAuth.sync({ force: false, transaction: tx });
       await PJSIPAor.sync({ force: false, transaction: tx });
       await PJSIPTransport.sync({ force: false, transaction: tx });
@@ -185,6 +198,16 @@ export const syncDatabase = async () => {
       // SMS
       await SmsMessage.sync({ force: false, transaction: tx }); // Sync the new model
 
+      // Network Configuration models
+      await ExternIp.sync({ force: false, transaction: tx });
+      await Stun.sync({ force: false, transaction: tx });
+      await Turn.sync({ force: false, transaction: tx });
+      await LocalNet.sync({ force: false, transaction: tx });
+
+      // Email model - note: uses constraints: false for associations
+      const Email = EmailModel(sequelize);
+      await Email.sync({ force: false, transaction: tx });
+
       await tx.commit();
       console.log("Database synchronized successfully");
     } catch (err) {
@@ -201,6 +224,55 @@ export const syncDatabase = async () => {
       console.error("Error synchronizing with alter:", alterError);
       throw alterError; // Re-throw the error to indicate failure
     }
+  }
+};
+
+/**
+ * Fix Asterisk PJSIP schema issues that can cause registration failures.
+ * This ensures the ps_contacts table has nullable expiration_timestamp field.
+ */
+export const fixAsteriskSchema = async () => {
+  try {
+    console.log("🔧 Checking Asterisk PJSIP schema...");
+    
+    // Check if ps_contacts table exists
+    const [tables] = await sequelize.query(
+      "SHOW TABLES LIKE 'ps_contacts'"
+    );
+    
+    if (tables.length === 0) {
+      console.log("ℹ️ ps_contacts table does not exist yet, skipping schema fix");
+      return;
+    }
+    
+    // Check the current column definition
+    const [columns] = await sequelize.query(
+      "SHOW COLUMNS FROM ps_contacts WHERE Field = 'expiration_timestamp'"
+    );
+    
+    if (columns.length === 0) {
+      // Column doesn't exist, add it
+      console.log("➕ Adding expiration_timestamp column to ps_contacts...");
+      await sequelize.query(
+        "ALTER TABLE ps_contacts ADD COLUMN expiration_timestamp DATETIME NULL DEFAULT NULL"
+      );
+      console.log("✅ expiration_timestamp column added");
+    } else {
+      // Column exists, check if it's nullable
+      const column = columns[0];
+      if (column.Null === 'NO') {
+        console.log("🔧 Fixing expiration_timestamp column to allow NULL...");
+        await sequelize.query(
+          "ALTER TABLE ps_contacts MODIFY COLUMN expiration_timestamp DATETIME NULL DEFAULT NULL"
+        );
+        console.log("✅ expiration_timestamp column fixed");
+      } else {
+        console.log("✅ ps_contacts.expiration_timestamp schema is correct");
+      }
+    }
+  } catch (error) {
+    // Log but don't throw - this is a non-critical fix
+    console.error("⚠️ Error fixing Asterisk schema (non-critical):", error.message);
   }
 };
 

@@ -1,0 +1,225 @@
+                         ┌──────────────────────────────────────────────────────────────────┐
+                         │                         AWS (Cloud Instance)                     │
+                         │                                                                  │
+                         │   VPC: 172.31.0.0/16                                             │
+                         │                                                                  │
+                         │   EC2 (Asterisk PBX)                                             │
+Internet (WAN2)          │     172.31.29.122 (private)                                      │
+197.221.148.146  ───────▶│                                                                  │
+(Public IP of MX)        │                     ┌──────────────────────────┐                 │
+                         │     VPN Tunnel #1   │VGW vgw-071e6ee07699bc216 │                 │
+                         │  (UP, initiates from└────────────┬─────────────┘                 │
+                         │   Meraki when traffic exists)     │                              │
+                         │                                   │IPsec (IKEv1, AES/SHA, DH2)   │
+                         │                                   │                              │
+                         │      Outside IPs                  │                              │
+                         │      AWS side A: 3.108.199.41 ◀───┘                              │
+                         │      AWS side B: 13.201.254.200 (second tunnel, optional)        │
+                         │                                                                  │
+                         │  Inside tunnel IPs (AWS-managed):                                │
+                         │   T1: 169.254.242.160/30  (AWS end)                              │
+                         │   T2: 169.254.109.40/30   (AWS end)                              │
+                         │                                                                  │
+                         │  VPC Route Table → routes to branch via VGW:                     │
+                         │    192.168.128.0/24 → VGW                                        │
+                         │    10.241.244.4/30  → VGW                                        │
+                         │    10.150.16.0/24   → VGW                                        │
+                         │    10.150.146.0/24  → VGW                                        │
+                         │    10.151.179.0/24  → VGW                                        │
+                         └──────────────────────────────────────────────────────────────────┘
+                                               ▲
+                                               │
+                                               │  IPsec over WAN2 (Public Internet)
+                                               │
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│                                  On-Prem: Meraki MX68CW                                  │
+│                                                                                          │
+│  Hostname: ihs3bke-dkndjmnn…   Serial: Q2NY-T68S-DX95                                    │
+│                                                                                          │
+│  WAN 2 (Internet):  Public IP 197.221.148.146  → used for IPsec to AWS                   │
+│  WAN 1 (Carrier P2P): 10.241.244.6/30  gw 10.241.244.5 (provider CPE)  → used for SIP    │
+│                                                                                          │
+│  VLANs / Local nets (Site-to-Site VPN export = ENABLED):                                 │
+│    - Default:          192.168.128.0/24    (Router IP 192.168.128.1)                     │
+│    - Carrier_P2P_Link: 10.241.244.4/30     (Router IP 10.241.244.6)                      │
+│                                                                                          │
+│  Static routes (next-hop 10.241.244.5 over WAN1):                                        │
+│    - 10.150.16.0/24     (SIP signaling)                                                  │
+│    - 10.150.146.0/24    (RTP media)                                                      │
+│    - 10.151.179.0/24    (RTP media)                                                      │
+│                                                                                          │
+│  Non-Meraki IPsec Peer (AWS-Asterisk-VPN):                                               │
+│    - IKE: v1 (AWS preset), PSK (matches AWS)                                             │
+│    - Remote IP: 3.108.199.41 (Tunnel #1)  [Currently using one tunnel with no HA can add 13.201.254.200 as second peer later on]    │
+│    - Private subnets (AWS side): 172.31.0.0/16                                           │
+│                                                                                          │
+│  SD-WAN / Traffic Shaping:                                                               │
+│    - Primary uplink: WAN 2 (Internet)                                                    │
+│    - VPN Multi-Uplink: Enabled                                                           │
+│    - Internet flow preference: Any → Preferred uplink WAN 2                              │
+│    - Connectivity Monitor (keepalive): 172.31.29.122 (EC2)  + 8.8.8.8 (Since Meraki is not able to do keepalive to initiate IKE traffic)                    │
+│                                                                                          │
+│  RESULTING FLOWS                                                                         │
+│  Asterisk (172.31.29.122)  ↔(VPN over WAN2)↔  MX                                         │
+│  MX  ↔(Static routes over WAN1)↔  Provider SBCs:                                         │
+│       10.150.16.0/24 (SIP) , 10.150.146.0/24 & 10.151.179.0/24 (RTP)                     │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+                                               │
+                                               │  Layer-2/3 Carrier P2P (Provider’s Meraki CPE)
+                                               ▼
+                                   Provider CPE / SBC network
+                                   - Next hop seen by MX: 10.241.244.5
+                                   - SIP/RTP subnets: 10.150.16.0/24, 10.150.146.0/24, 10.151.179.0/24
+
+
+AWS objects (what exists)
+
+# Customer Gateway (CGW)
+
+- IP: 197.221.148.146 (MX WAN2 public)
+- BGP: not used (Static)
+
+# Virtual Private Gateway (VGW)
+- vgw-071e6ee07699bc216 attached to VPC 172.31.0.0/16
+
+# Site-to-Site VPN Connection
+- vpn-0dca0979f1158a710
+- Tunnel 1 outside IP 3.108.199.41 → UP
+- Tunnel 2 outside IP 13.201.254.200 → (optional, can add on MX for HA)
+
+Static routes (AWS → Branch):
+192.168.128.0/24, 10.241.244.4/30, 10.150.16.0/24, 10.150.146.0/24, 10.151.179.0/24
+
+# VPC Route Table (attached to PBX subnets)
+
+All the above branch prefixes → VGW.
+
+### Meraki config (what exists)
+
+Site-to-Site VPN: Hub (Mesh)
+Local networks Enabled (exported):
+- 192.168.128.0/24
+- 10.241.244.4/30
+
+(Static-routed provider nets are also exported so AWS knows return paths)
+
+# Non-Meraki Peer (AWS-Asterisk-VPN)
+- IKEv1, Preset = AWS
+- Remote/Public IP: 3.108.199.41 (Remote ID same)
+- Private subnets: 172.31.0.0/16
+- PSK: (matches AWS)
+- Health/keepalive achieved by Connectivity Monitor → 172.31.29.122
+
+# WANs
+
+- WAN 2 (Internet): Public 197.221.148.146 → used for IPsec
+- WAN 1 (Carrier P2P): 10.241.244.6/30, GW 10.241.244.5 → used for SIP/RTP to provider
+- Static routes via WAN1 (Next hop 10.241.244.5):
+  - 10.150.16.0/24, 10.150.146.0/24, 10.151.179.0/24
+  - (Set to “active when next hop responds” to avoid black-hole if WAN1 is down.)
+
+# Traffic Shaping / SD-WAN
+- Primary uplink WAN 2; Load balancing Disabled
+- Internet flow preference → WAN 2
+- Multi-Uplink AutoVPN: Enabled
+- Connectivity monitor targets: 8.8.8.8 (default), 172.31.29.122 (keep VPN alive)
+
+# Asterisk pjsip.conf (safe starter)
+ 
+root@ip-172-31-29-122:~# cat /etc/asterisk/pjsip.conf 
+
+;MAYDAY
+[transport-udp]
+type=transport
+protocol=udp
+rtp_keepalive=15
+bind=0.0.0.0:5060
+local_net=172.31.0.0/16
+local_net=10.150.16.0/24
+local_net=10.150.146.0/24
+local_net=10.151.179.0/24
+allow_reload=yes
+
+[transport-tcp]
+type=transport
+protocol=tcp
+bind=0.0.0.0:5060
+local_net=172.31.0.0/16
+local_net=10.150.16.0/24
+local_net=10.150.146.0/24
+local_net=10.151.179.0/24
+allow_reload=yes
+
+[transport-ws]
+type=transport
+protocol=ws
+bind=0.0.0.0:8088
+external_media_address=3.110.111.195
+external_signaling_address=3.110.111.195
+websocket_write_timeout=10000
+allow_reload=yes
+local_net=172.31.0.0/16
+local_net=10.241.244.0/30
+
+[transport-wss]
+type=transport
+protocol=wss
+bind=0.0.0.0:8089
+external_media_address=3.110.111.195
+external_signaling_address=3.110.111.195
+websocket_write_timeout=10000
+method=tlsv1_2
+require_client_cert=no
+verify_client=no
+local_net=172.31.0.0/16
+local_net=10.241.244.0/30
+symmetric_transport=yes
+allow_reload=yes
+cert_file=/etc/letsencrypt/live/cs.brhgroup.co/fullchain.pem
+priv_key_file=/etc/letsencrypt/live/cs.brhgroup.co/privkey.pem
+
+
+[BANDALI_RISE_HOSPITALITY_SIP]
+type=endpoint
+context=from-voip-provider
+from_user=256200825700
+disallow=all
+allow=ulaw,alaw
+transport=transport-udp
+aors=BANDALI_RISE_HOSPITALITY_SIP_aor
+send_pai=yes
+send_rpid=yes
+direct_media=no
+rtp_symmetric=yes
+force_rport=yes
+rewrite_contact=yes
+identify_by=ip
+
+
+[BANDALI_RISE_HOSPITALITY_SIP_aor]
+type=aor
+contact=sip:10.150.16.68:5060
+qualify_frequency=60
+max_contacts=1
+remove_existing=yes
+
+
+[BANDALI_RISE_HOSPITALITY_SIP_identify]
+type=identify
+endpoint=BANDALI_RISE_HOSPITALITY_SIP
+match=10.150.16.68/32
+
+
+RTP ports: keep Asterisk’s rtp.conf at 10000–20000/udp.
+Security group (EC2) already set: allow UDP 5060 and 10000–20000 from:
+192.168.128.0/24, 10.241.244.4/30, 10.150.16.0/24, 10.150.146.0/24, 10.151.179.0/24, plus ICMP for testing.
+
+We hope to initiate/maintain the AWS tunnel from your (Airtel) MX over WAN 2 (public IP 197.221.148.146).
+
+SIP/RTP to your SBCs stays on WAN 1 via the 10.241.244.4/30 P2P link (next hop 10.241.244.5).
+
+Our AWS VPC is 172.31.0.0/16; PBX is 172.31.29.122.
+
+The VPN selectors include all branch/SIP/RTP subnets so return traffic from AWS to the branch always goes through the VPN and back out WAN1 to your (Airtel) SBCs.
+
+Continuous ICMP probes to 172.31.29.122 keep the tunnel alive (no manual pings needed).

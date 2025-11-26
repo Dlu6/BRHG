@@ -45,6 +45,7 @@ window.addEventListener("message", (event) => {
       "http://localhost:3000",
       "http://localhost:3002",
       "https://cs.hugamara.com",
+      "https://cs.brhg.co",
       "*://*.hugamara.com/*",
       "*://*.zoho.com/*",
       "https://mayday-website-backend-c2abb923fa80.herokuapp.com/*",

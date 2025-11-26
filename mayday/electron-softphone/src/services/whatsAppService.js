@@ -3,7 +3,7 @@ import logoutManager from "./logoutManager";
 
 const API_BASE_URL =
   process.env.NODE_ENV === "production"
-    ? "https://cs.backspace.ug/mayday-api/api/whatsapp"
+    ? "https://cs.brhgroup.co/mayday-api/api/whatsapp"
     : "http://localhost:8004/api/whatsapp";
 
 // Register this service with the logout manager for automatic cleanup

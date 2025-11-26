@@ -6,7 +6,7 @@ const API = axios.create({
   baseURL:
     process.env.NODE_ENV === "development"
       ? "http://localhost:8004"
-      : "https://cs.backspace.ug/mayday-api",
+      : "https://cs.brhgroup.co/mayday-api",
 });
 
 // Add auth token to all requests

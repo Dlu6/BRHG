@@ -234,7 +234,7 @@ const broadcastToTabs = (message) => {
     "*://*.zoho.com/*",
     "*://*.cs.morvenconsults.com/*",
 
-    "https://cs.hugamara.com/*",
+    "https://cs.brhgroup.co/*",
     "*://*.hugamara.com/*",
     "http://localhost:3000/*",
     "http://localhost:3002/*",
@@ -281,7 +281,7 @@ chrome.action.onClicked.addListener((tab) => {
       iconUrl: "logo.png",
       title: "Mayday Softphone",
       message:
-        "This extension only works on supported platforms (Zoho, cs.hugamara.com, localhost:3000)",
+        "This extension only works on supported platforms (Zoho, cs.brhgroup.co, localhost:3000)",
     });
   }
 });
@@ -291,7 +291,7 @@ function broadcastStatus() {
   const urlPatterns = [
     "*://*.zoho.com/*",
     "*://cs.morvenconsults.com/*",
-    "*://*.cs.hugamara.com/*",
+    "*://*.cs.brhgroup.co/*",
     "*://*.hugamara.com/*",
     "http://localhost:3000/*",
     "http://localhost:3002/*",
@@ -997,7 +997,7 @@ const setupExtensionLifecycleHandlers = () => {
     const urlPatterns = [
       "*://*.zoho.com/*",
       "*://cs.morvenconsults.com/*",
-      "*://*.cs.hugamara.com/*",
+      "*://*.cs.brhgroup.co/*",
       "*://*.hugamara.com/*",
       "http://localhost:3000/*",
     ];

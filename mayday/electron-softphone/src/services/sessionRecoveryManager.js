@@ -7,10 +7,13 @@
  * 3. Restores services in correct order
  * 4. Verifies complete restoration before marking as ready
  * 5. Provides clear status updates to UI
+ * 6. Handles proactive token refresh to prevent expiration
  */
 
 import { EventEmitter } from "events";
 import * as storageService from "./storageService";
+import tokenManager from "./tokenManager";
+import authApi from "./api/authApi";
 
 /**
  * Creates a Session Recovery Manager instance
@@ -34,6 +37,7 @@ const createSessionRecoveryManager = () => {
       agent: false,
       monitoring: false,
     },
+    isRefreshingToken: false, // Prevent concurrent refresh attempts
   };
 
   const config = {
@@ -75,6 +79,9 @@ const createSessionRecoveryManager = () => {
 
     // Listen for critical failures
     setupFailureDetection();
+
+    // Start token monitoring for proactive refresh
+    startTokenMonitoring();
 
     console.log("✅ [SessionRecovery] Session Recovery Manager initialized");
   };
@@ -686,7 +693,7 @@ const createSessionRecoveryManager = () => {
                 apiUrl:
                   process.env.NODE_ENV === "development"
                     ? "http://localhost:8004"
-                    : "https://cs.backspace.ug/mayday-api",
+                    : "https://cs.brhgroup.co/mayday-api",
                 token: token,
               });
 
@@ -834,6 +841,121 @@ const createSessionRecoveryManager = () => {
   };
 
   /**
+   * Start token monitoring for proactive refresh
+   */
+  const startTokenMonitoring = () => {
+    console.log("🔄 [SessionRecovery] Starting token monitoring");
+
+    // Start monitoring with callback to handle refresh
+    tokenManager.startTokenMonitoring(async () => {
+      await handleTokenRefresh();
+    }, 60); // Check every 60 seconds
+
+    console.log("✅ [SessionRecovery] Token monitoring started");
+  };
+
+  /**
+   * Handle proactive token refresh
+   */
+  const handleTokenRefresh = async () => {
+    // Prevent concurrent refresh attempts
+    if (state.isRefreshingToken) {
+      console.log(
+        "⏳ [SessionRecovery] Token refresh already in progress, skipping"
+      );
+      return;
+    }
+
+    // Don't refresh during logout or recovery
+    if (window.isLoggingOut || state.isRecovering) {
+      console.log(
+        "⚠️ [SessionRecovery] Skipping token refresh (logout or recovery in progress)"
+      );
+      return;
+    }
+
+    try {
+      state.isRefreshingToken = true;
+      console.log("🔄 [SessionRecovery] Starting token refresh...");
+
+      const refreshToken = storageService.getRefreshToken();
+      if (!refreshToken) {
+        console.error("❌ [SessionRecovery] No refresh token found");
+        emitter.emit("token:refresh_failed", { reason: "No refresh token" });
+        return;
+      }
+
+      // Call refresh token API
+      const result = await authApi.refreshToken(refreshToken);
+
+      // Update stored tokens
+      storageService.setAuthToken(result.token);
+      storageService.setRefreshToken(result.refreshToken);
+
+      // Update user data if provided
+      if (result.user) {
+        const existingUserData = storageService.getUserData();
+        storageService.setUserData({
+          ...existingUserData,
+          user: {
+            ...existingUserData?.user,
+            ...result.user,
+          },
+        });
+      }
+
+      console.log("✅ [SessionRecovery] Token refreshed successfully");
+
+      // Update WebSocket with new token if needed
+      if (services.websocketService && services.websocketService.isConnected) {
+        console.log("🔄 [SessionRecovery] Updating WebSocket with new token");
+        // WebSocket will pick up new token on next reconnect if needed
+        // No need to manually update since it reads from storage
+      }
+
+      // Emit success event
+      emitter.emit("token:refreshed", {
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("❌ [SessionRecovery] Token refresh failed:", error);
+
+      // Check if refresh token expired
+      if (error.message === "REFRESH_TOKEN_EXPIRED") {
+        console.error(
+          "❌ [SessionRecovery] Refresh token expired - session invalid"
+        );
+
+        // Stop token monitoring
+        tokenManager.stopTokenMonitoring();
+
+        // Emit event for UI to handle (show session expired message)
+        emitter.emit("token:expired", {
+          reason: "Refresh token expired",
+        });
+
+        // Clear auth and redirect to login
+        storageService.clear();
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 500);
+      } else if (error.message === "NETWORK_ERROR") {
+        console.warn(
+          "⚠️ [SessionRecovery] Network error during token refresh, will retry"
+        );
+        // Token manager will retry on next interval
+      } else {
+        // Other errors - emit event but allow retry
+        emitter.emit("token:refresh_failed", {
+          error: error.message,
+        });
+      }
+    } finally {
+      state.isRefreshingToken = false;
+    }
+  };
+
+  /**
    * Force immediate recovery
    */
   const forceRecovery = async () => {
@@ -876,6 +998,10 @@ const createSessionRecoveryManager = () => {
 
     // Stop health monitoring
     stopHealthMonitoring();
+
+    // Stop token monitoring
+    tokenManager.stopTokenMonitoring();
+    console.log("✅ [SessionRecovery] Token monitoring stopped");
 
     // Remove WebSocket event listeners
     if (services.websocketService && eventHandlers.websocket) {

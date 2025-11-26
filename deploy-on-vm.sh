@@ -123,8 +123,8 @@ fi
 
 echo -e "${GREEN}🎉 Deployment completed successfully!${NC}"
 echo -e "${YELLOW}📋 Access URLs:${NC}"
-echo "• Call Center Dashboard: https://cs.backspace.ug/callcenter/"
-echo "• Call Center API: https://cs.backspace.ug/mayday-api/api/"
+echo "• Call Center Dashboard: https://cs.brhgroup.co/callcenter/"
+echo "• Call Center API: https://cs.brhgroup.co/mayday-api/api/"
 echo ""
 echo -e "${YELLOW}🔧 Useful commands:${NC}"
 echo "• Check PM2 status: pm2 status"

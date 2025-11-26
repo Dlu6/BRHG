@@ -1,6 +1,10 @@
 // Centralized Logout Manager Service (function-based)
 // Handles all logout logic centrally and exposes a simple functional API
 
+import tokenManager from "./tokenManager";
+import authApi from "./api/authApi";
+import { getRefreshToken, getUserData } from "./storageService";
+
 let isLoggingOut = false;
 let logoutStartTime = null;
 const registeredServices = new Map();
@@ -76,6 +80,33 @@ const startLogout = async (force = false) => {
   );
 
   try {
+    // Stop token monitoring first
+    console.log("🔄 Stopping token monitoring...");
+    try {
+      tokenManager.stopTokenMonitoring();
+      console.log("✅ Token monitoring stopped");
+    } catch (error) {
+      console.warn("⚠️ Error stopping token monitoring:", error);
+    }
+
+    // Revoke refresh token before cleanup
+    console.log("🔄 Revoking refresh token...");
+    try {
+      const refreshToken = getRefreshToken();
+      const userData = getUserData();
+      const extension = userData?.user?.extension;
+
+      if (refreshToken && extension) {
+        await authApi.logout(extension, refreshToken);
+        console.log("✅ Refresh token revoked");
+      } else {
+        console.warn("⚠️ No refresh token or extension found to revoke");
+      }
+    } catch (error) {
+      console.warn("⚠️ Error revoking refresh token:", error);
+      // Continue with logout even if revocation fails
+    }
+
     // Execute all registered logout callbacks
     console.log("🔄 Executing logout callbacks...");
     for (const callback of logoutCallbacks) {
@@ -217,6 +248,7 @@ const performFinalCleanup = async () => {
   // Note: We preserve "rememberMe" and encrypted credentials for the Remember Me functionality
   try {
     localStorage.removeItem("authToken");
+    localStorage.removeItem("refreshToken"); // Remove refresh token
     localStorage.removeItem("mongoToken");
     localStorage.removeItem("host");
     localStorage.removeItem("email");

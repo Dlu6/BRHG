@@ -261,7 +261,7 @@ git push origin development
 
 ```bash
 # SSH to VM
-ssh -i ~/Downloads/hugamara.pem admin@ec2-13-234-18-2.ap-south-1.compute.amazonaws.com
+ssh -i ~/Downloads/hugamara.pem admin@ec2-3-111-43-161.ap-south-1.compute.amazonaws.com
 
 # Pull changes
 cd /home/admin/hugamara-portal

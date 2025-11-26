@@ -61,7 +61,7 @@ The Mayday Call Center system consists of two main components:
 
    ```ini
    # Example for mayday/slave-backend/.env
-   DB_HOST=cs.hugamara.com
+   DB_HOST=cs.brhgroup.co
    DB_PORT=3306
    DB_USER=root
    DB_PASSWORD=YOUR_ROOT_PASSWORD
@@ -84,7 +84,7 @@ The Mayday Call Center system consists of two main components:
 
 5. **Access the application:**
    - **Development**: http://localhost:3002
-   - **Production**: https://cs.backspace.ug/callcenter/
+   - **Production**: https://cs.brhgroup.co/callcenter/
    - **Login Credentials**:
      - Username: `admin`
      - Password: `Pasword@256`
@@ -192,7 +192,7 @@ Main Hugamara System          Mayday Call Center
 - **✅ React Routing Issue (CRITICAL)**: Fixed blank white screen in production by properly configuring React app with `homepage: "/callcenter/"` and updating nginx to serve static assets from correct paths
 - **✅ Static Assets Routing**: Fixed 404 errors for JavaScript, CSS, and other static files by adding proper nginx location blocks for `/static/` and individual assets
 - **✅ Nginx Configuration**: Updated nginx to properly handle SPA routing with correct `try_files` directives and asset serving
-- **✅ Production URL Structure**: Application now correctly serves at `https://cs.backspace.ug/callcenter/` with proper asset loading
+- **✅ Production URL Structure**: Application now correctly serves at `https://cs.brhgroup.co/callcenter/` with proper asset loading
 
 #### Dashboard Analytics Fixes (Oct 1, 2025)
 
@@ -747,7 +747,7 @@ rtcpinterval=5000
 ; ✅ CRITICAL: ICE Support and External Address Configuration
 icesupport=yes
 stunaddr=stun.l.google.com:19302
-externaddr=13.234.18.2           ; ← Your public IP
+externaddr=3.111.43.161           ; ← Your public IP
 directmedia=no
 bindaddr=0.0.0.0
 
@@ -760,8 +760,8 @@ dtlsenable=yes
 dtlsverify=no
 dtlssetup=actpass
 srtp_tag_32=yes
-dtlscertfile=/etc/letsencrypt/live/cs.hugamara.com/fullchain.pem
-dtlsprivatekey=/etc/letsencrypt/live/cs.hugamara.com/privkey.pem
+dtlscertfile=/etc/letsencrypt/live/cs.brhgroup.co/fullchain.pem
+dtlsprivatekey=/etc/letsencrypt/live/cs.brhgroup.co/privkey.pem
 ```
 
 **Apply Changes:**
@@ -817,16 +817,16 @@ Also ensure your `pjsip.conf` transport has correct NAT settings:
 type=transport
 protocol=ws
 bind=0.0.0.0:8088
-external_media_address=13.234.18.2
-external_signaling_address=13.234.18.2
+external_media_address=3.111.43.161
+external_signaling_address=3.111.43.161
 local_net=172.31.0.0/16           ; ← NOT 0.0.0.0/0 (see note below)
 
 [transport-wss]
 type=transport
 protocol=wss
 bind=0.0.0.0:8089
-external_media_address=13.234.18.2
-external_signaling_address=13.234.18.2
+external_media_address=3.111.43.161
+external_signaling_address=3.111.43.161
 local_net=172.31.0.0/16           ; ✅ CRITICAL: Define only your VPC as local
 ```
 
@@ -1075,7 +1075,7 @@ The Chrome extension supports dynamic multi-tenant configuration:
 
 ```javascript
 // The extension automatically detects the current domain
-// For https://cs.hugamara.com → uses /mayday-api endpoints
+// For https://cs.brhgroup.co → uses /mayday-api endpoints
 // For https://client1.example.com → uses /api endpoints
 
 // Health check example:
@@ -1094,7 +1094,7 @@ The Call Center now supports outbound SMS via an external provider and a built-i
 
 - Default provider: Cyber Innovative SMS
 - Base URL: `https://sms.cyber-innovative.com/secure`
-- Optional Override IP (when DNS fails): `41.77.78.156`
+- Optional Override IP (when DNS fails): `3.111.43.161`
 
 ### Backend Configuration (Production)
 
@@ -1103,7 +1103,7 @@ Add these variables to the `mayday-callcenter-backend` app in `ecosystem.config.
 ```js
 // SMS Provider Configuration
 SMS_PROVIDER_BASE_URL: "https://sms.cyber-innovative.com/secure",
-SMS_PROVIDER_OVERRIDE_IP: "41.77.78.156",     // optional; for DNS issues
+SMS_PROVIDER_OVERRIDE_IP: "3.111.43.161",     // optional; for DNS issues
 SMS_PROVIDER_STRICT_TLS: "false",             // "true" if NOT using override IP
 // Use either USER/PASS or AUTH header (prefer user/pass)
 SMS_PROVIDER_USERNAME: "medhi",
@@ -1111,7 +1111,7 @@ SMS_PROVIDER_PASSWORD: "Lusuku@#2025!",
 // Alternatively:
 // SMS_PROVIDER_AUTH: "Basic bWVkaGk6THVzdWt1QCMyMDI1IQ==",
 SMS_DEFAULT_SENDER: "Hugamara",
-SMS_DLR_URL: "https://cs.hugamara.com/api/sms/dlr",
+SMS_DLR_URL: "https://cs.brhgroup.co/api/sms/dlr",
 ```
 
 Notes:
@@ -1171,7 +1171,7 @@ curl --location 'https://sms.cyber-innovative.com/secure/send' \
     "from":"Hugamara",
     "content":"This is a test message from Hugamara Mayday",
     "dlr":"yes",
-    "dlr-url":"https://cs.hugamara.com/api/sms/dlr",
+    "dlr-url":"https://cs.brhgroup.co/api/sms/dlr",
     "dlr-level":3
   }'
 ```
@@ -1187,7 +1187,7 @@ If DNS fails, temporarily resolve via IP and Host override (example):
 
 ```bash
 curl --location 'https://sms.cyber-innovative.com/secure/send' \
-  --resolve 'sms.cyber-innovative.com:443:41.77.78.156' \
+  --resolve 'sms.cyber-innovative.com:443:3.111.43.161' \
   --header 'Content-Type: application/json' \
   --header 'Authorization: Basic bWVkaGk6THVzdWt1QCMyMDI1IQ==' \
   --data '{"to":"+256700771301","from":"Hugamara","content":"Test","dlr":"yes"}'
@@ -1265,9 +1265,9 @@ curl --location 'https://sms.cyber-innovative.com/secure/send' \
 
 The production deployment uses a specific URL structure:
 
-- **Main Dashboard**: `https://cs.backspace.ug/callcenter/`
-- **API Endpoints**: `https://cs.backspace.ug/mayday-api/api/`
-- **WebSocket**: `wss://cs.backspace.ug/socket.io/`
+- **Main Dashboard**: `https://cs.brhgroup.co/callcenter/`
+- **API Endpoints**: `https://cs.brhgroup.co/mayday-api/api/`
+- **WebSocket**: `wss://cs.brhgroup.co/socket.io/`
 
 ### Deployment Scripts
 
@@ -1313,7 +1313,7 @@ The React app is configured with:
 
 - Verify backend is running on port 5001
 - Check nginx proxy configuration for `/mayday-api/api/` path
-- Test backend health endpoint: `curl https://cs.backspace.ug/mayday-api/api/system/health`
+- Test backend health endpoint: `curl https://cs.brhgroup.co/mayday-api/api/system/health`
 
 #### Port Conflicts
 

@@ -106,7 +106,7 @@ const UserModel = sequelize.define(
         return [
           // { urls: "stun:stun.l.google.com:19302" },
           {
-            urls: process.env.TURN_SERVER || "turn:65.0.108.79:5349",
+            urls: process.env.TURN_SERVER || "turn:3.111.43.161:5349",
             username: process.env.TURN_USERNAME || "Reach-Miwebrtc",
             credential: process.env.TURN_PASSWORD || "Pasword@256",
           },

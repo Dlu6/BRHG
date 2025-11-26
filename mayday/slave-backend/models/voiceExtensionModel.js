@@ -13,16 +13,8 @@ const VoiceExtension = sequelize.define(
       autoIncrement: true,
     },
     context: DataTypes.STRING,
+    exten: DataTypes.STRING,
     extension: DataTypes.STRING,
-    exten: {
-      type: DataTypes.VIRTUAL(DataTypes.STRING),
-      get() {
-        return this.getDataValue("extension");
-      },
-      set(value) {
-        this.setDataValue("extension", value);
-      },
-    },
     priority: DataTypes.INTEGER,
     appType: DataTypes.STRING,
     app: DataTypes.STRING,

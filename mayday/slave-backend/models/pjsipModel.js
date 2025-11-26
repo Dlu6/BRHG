@@ -385,12 +385,19 @@ export const PJSIPContact = sequelize.define(
       allowNull: true,
     },
     expiration_time: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.BIGINT,
       allowNull: true,
+    },
+    expiration_timestamp: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      defaultValue: null,
+      comment: "Timestamp when contact registration expires",
     },
     qualify_frequency: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      defaultValue: 0,
     },
     qualify_timeout: {
       type: DataTypes.FLOAT,
@@ -402,8 +409,9 @@ export const PJSIPContact = sequelize.define(
       comment: "Consider 2xx responses to qualify as successful",
     },
     prune_on_boot: {
-      type: DataTypes.ENUM("0", "1", "off", "on", "false", "true", "no", "yes"),
+      type: DataTypes.STRING(5),
       allowNull: true,
+      defaultValue: "no",
       comment: "Prune this contact on Asterisk boot",
     },
     authenticate_qualify: {
@@ -415,7 +423,7 @@ export const PJSIPContact = sequelize.define(
       allowNull: true,
     },
     path: {
-      type: DataTypes.TEXT,
+      type: DataTypes.STRING(255),
       allowNull: true,
     },
     user_agent: {
@@ -423,7 +431,7 @@ export const PJSIPContact = sequelize.define(
       allowNull: true,
     },
     endpoint: {
-      type: DataTypes.STRING(255),
+      type: DataTypes.STRING(40),
       allowNull: true,
     },
     via_addr: {
@@ -637,8 +645,8 @@ export const generatePJSIPConfig = (
     bundle: "yes",
     webrtc: "yes",
     outbound_auth: extension,
-    dtls_cert_file: "/etc/letsencrypt/live/cs.backspace.ug/fullchain.pem",
-    dtls_private_key: "/etc/letsencrypt/live/cs.backspace.ug/privkey.pem",
+    dtls_cert_file: "/etc/letsencrypt/live/cs.brhgroup.co/fullchain.pem",
+    dtls_private_key: "/etc/letsencrypt/live/cs.brhgroup.co/privkey.pem",
     dtls_auto_generate_cert: "no",
   };
 
@@ -654,8 +662,8 @@ export const generatePJSIPConfig = (
       bundle: "yes",
       webrtc: "yes",
       dtls_auto_generate_cert: "no",
-      tls_cert_file: "/etc/letsencrypt/live/cs.backspace.ug/fullchain.pem",
-      dtls_private_key: "/etc/letsencrypt/live/cs.backspace.ug/privkey.pem",
+      tls_cert_file: "/etc/letsencrypt/live/cs.brhgroup.co/fullchain.pem",
+      dtls_private_key: "/etc/letsencrypt/live/cs.brhgroup.co/privkey.pem",
     });
   }
 

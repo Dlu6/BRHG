@@ -10,6 +10,8 @@ import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { useNotification } from "../contexts/NotificationContext";
 import packageJson from "../../package.json";
 import { storageService, clearLogoutFlag } from "../services/storageService";
+import tokenManager from "../services/tokenManager";
+import { setupAuthInterceptor } from "../services/authInterceptor";
 // import mhulogo from "../../src/assets/mhu_logo.jpg";
 import mhulogo from "../../src/assets/mayday-logo6.png";
 import {
@@ -119,7 +121,7 @@ const LoginElectron = ({ onLoginSuccess }) => {
     host:
       process.env.NODE_ENV === "development"
         ? "http://localhost:8004"
-        : "https://cs.backspace.ug",
+        : "https://cs.brhgroup.co",
     email: "",
     password: "",
     rememberMe: false,
@@ -260,7 +262,7 @@ const LoginElectron = ({ onLoginSuccess }) => {
         }
       })();
 
-      const isBackspaceDomain = /(^|\.)cs.backspace.ug\.com$/i.test(hostname);
+      const isBackspaceDomain = /(^|\.)brhgroup\.co$/i.test(hostname);
       const apiBasePath =
         process.env.NODE_ENV === "development"
           ? "/api"
@@ -297,10 +299,31 @@ const LoginElectron = ({ onLoginSuccess }) => {
         tokens,
       });
 
+      // Store access token (sip token)
       storageService.setAuthToken(tokens.sip);
+
+      // Store refresh token if provided
+      if (tokens.refreshToken) {
+        storageService.setRefreshToken(tokens.refreshToken);
+        console.log("✅ Refresh token stored");
+      } else {
+        console.warn("⚠️ No refresh token provided in login response");
+      }
 
       // Clear logout flag on successful login
       clearLogoutFlag();
+
+      // Setup axios interceptor for automatic token refresh
+      setupAuthInterceptor();
+      console.log("✅ Auth interceptor configured");
+
+      // Start token monitoring for proactive refresh
+      // This will be started by session recovery manager, but we can start it here too
+      if (tokens.refreshToken) {
+        console.log(
+          "🔄 Token monitoring will be started by session recovery manager"
+        );
+      }
 
       // STEP 2: Validate configuration
       setLoginProgress((prev) => ({
@@ -339,7 +362,7 @@ const LoginElectron = ({ onLoginSuccess }) => {
         if (isLocalHost) {
           return `ws://${host}:8088/ws`;
         }
-        return `wss://cs.backspace.ug/ws`;
+        return `wss://cs.brhgroup.co/ws`;
       })();
 
       // console.log("🤣🤣🤣🤣🤣🤣SIP config:", {
@@ -400,10 +423,10 @@ const LoginElectron = ({ onLoginSuccess }) => {
         // Use remote URL preference if set, otherwise default based on NODE_ENV
         const useRemote = localStorage.getItem("useRemoteUrl") === "true";
         const base = useRemote
-          ? "https://cs.backspace.ug/mayday-api"
+          ? "https://cs.brhgroup.co"
           : process.env.NODE_ENV === "development"
           ? "http://localhost:8004"
-          : "https://cs.backspace.ug/mayday-api";
+          : "https://cs.brhgroup.co";
 
         // In development, our backend runs without the /mayday-api prefix.
         const notifyUrl = `${base}${

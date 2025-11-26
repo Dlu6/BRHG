@@ -7,7 +7,7 @@ import logoutManager from "./logoutManager";
 function resolvePreferredOrigin() {
   try {
     const useRemote = localStorage.getItem("useRemoteUrl") === "true";
-    if (useRemote) return "https://cs.backspace.ug/mayday-api";
+    if (useRemote) return "https://cs.brhgroup.co/mayday-api";
   } catch (_) {}
 
   // In Electron, window.location.origin might be file://
@@ -25,7 +25,7 @@ function resolvePreferredOrigin() {
   // Default per NODE_ENV when no preference stored
   return process.env.NODE_ENV === "development"
     ? "http://localhost:8004"
-    : "https://cs.backspace.ug/mayday-api";
+    : "https://cs.brhgroup.co/mayday-api";
 }
 
 const preferredOrigin = resolvePreferredOrigin();
@@ -71,7 +71,7 @@ const connect = async () => {
   return new Promise((resolve, reject) => {
     try {
       // Use Socket.IO – matches backend expectations in server/services/socketService.js
-      const url = wsBaseUrl; // e.g., ws://localhost:8004 or wss://cs.backspace.ug
+      const url = wsBaseUrl; // e.g., ws://localhost:8004 or wss://cs.brhgroup.co
       // Connection log suppressed after stabilization
 
       // Clean up previous socket if any

@@ -84,6 +84,7 @@ const getEnvironmentConfig = async () => {
           process.env &&
           process.env.SLAVE_SERVER_URL) ||
         "https://cs.hugamara.com" ||
+        "https://cs.brhg.co" ||
         "https://cs.morvenconsults.com",
       SLAVE_SERVER_API_URL: storedHostUrl
         ? `${storedHostUrl}${apiPath}`
@@ -92,7 +93,8 @@ const getEnvironmentConfig = async () => {
         : (typeof process !== "undefined" &&
             process.env &&
             process.env.SLAVE_SERVER_API_URL) ||
-          "https://cs.hugamara.com/api",
+          "https://cs.hugamara.com/api" ||
+          "https://cs.brhg.co/api",
       MASTER_SERVER_URL:
         (typeof process !== "undefined" &&
           process.env &&

@@ -19,6 +19,8 @@ import chalk from "chalk";
 import amiClient from "../config/ami.js";
 import dotenv from "dotenv";
 import createLicenseService from "../services/licenseService.js";
+import refreshTokenService from "../services/refreshTokenService.js";
+import { generateTokenPair } from "../utils/auth.js";
 
 const licenseService = createLicenseService();
 
@@ -36,7 +38,7 @@ const getEnv = (key, fallback = undefined) =>
     ? process.env[key]
     : fallback;
 const getAsteriskHost = () =>
-  getEnv("ASTERISK_HOST", getEnv("SLAVE_SERVER_DOMAIN", "cs.backspace.ug"));
+  getEnv("ASTERISK_HOST", getEnv("SLAVE_SERVER_DOMAIN", "cs.brhgroup.co"));
 export const superUserLogin = async (req, res) => {
   const { username, password } = req.body;
   try {
@@ -46,9 +48,9 @@ export const superUserLogin = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });
 
-    const authToken = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, {
-      expiresIn: "12h",
-    });
+    // Generate access token (8h) and refresh token (7d)
+    const { accessToken, refreshToken: refreshTokenJWT } =
+      generateTokenPair(user);
 
     // Generate License Session Token
     const serverLicense =
@@ -61,8 +63,13 @@ export const superUserLogin = async (req, res) => {
       user.extension
     );
 
+    // Store refresh token in database
+    const { token: refreshToken } =
+      await refreshTokenService.createRefreshToken(user.id, clientFingerprint);
+
     res.status(200).json({
-      token: authToken,
+      token: accessToken,
+      refreshToken: refreshToken,
       licenseSessionToken: licenseSessionToken,
       user,
     });
@@ -290,27 +297,29 @@ export const registerAgent = async (req, res) => {
 
     // Generate tokens concurrently
     // console.log("Generating SIP and License session tokens...");
-    const [sipToken, licenseSessionToken] = await Promise.all([
-      jwt.sign(
-        {
-          userId: user.id,
-          username: user.username,
-          role: user.role,
-          extension: user.extension,
-          sipEnabled: true,
-        },
-        JWT_SECRET,
-        { expiresIn: "24h" }
-      ),
+    const { accessToken: sipToken, refreshToken: refreshTokenJWT } =
+      generateTokenPair({
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        extension: user.extension,
+      });
+
+    const [licenseSessionToken, refreshTokenData] = await Promise.all([
       licenseService.generateClientToken(
         serverLicense.id,
         user.id,
         req.body.fingerprint || "softphone-login",
         user.extension
       ),
+      refreshTokenService.createRefreshToken(
+        user.id,
+        req.body.fingerprint || "softphone-login"
+      ),
     ]);
     console.log("✅ SIP Token generated.");
     console.log("✅ License Session Token generated:", licenseSessionToken);
+    console.log("✅ Refresh Token generated.");
 
     await Promise.all([sqlTransaction.commit()]);
 
@@ -392,6 +401,7 @@ export const registerAgent = async (req, res) => {
         },
         tokens: {
           sip: `Bearer ${sipToken}`,
+          refreshToken: refreshTokenData.token,
           license: licenseSessionToken,
         },
       },
@@ -414,15 +424,56 @@ export const registerAgent = async (req, res) => {
 };
 
 export const agentLogout = async (req, res) => {
-  const { extension } = req.body;
+  const { extension, refreshToken } = req.body;
   try {
+    // Update agent status
     await UserModel.update(
       { sipRegistered: false, online: false },
       { where: { extension } }
     );
-    res.status(200).json({ message: `Agent ${extension} logged out.` });
+
+    // Revoke refresh token if provided
+    if (refreshToken) {
+      try {
+        await refreshTokenService.revokeRefreshToken(refreshToken);
+        console.log(
+          `✅ [UsersController] Revoked refresh token for extension ${extension}`
+        );
+      } catch (error) {
+        console.error("[UsersController] Error revoking refresh token:", error);
+        // Continue with logout even if token revocation fails
+      }
+    }
+
+    // Optionally, revoke all user tokens for the extension
+    // Find user by extension and revoke all their tokens
+    const user = await UserModel.findOne({ where: { extension } });
+    if (user) {
+      try {
+        const revokedCount = await refreshTokenService.revokeAllUserTokens(
+          user.id
+        );
+        console.log(
+          `✅ [UsersController] Revoked ${revokedCount} tokens for user ${user.id}`
+        );
+      } catch (error) {
+        console.error(
+          "[UsersController] Error revoking all user tokens:",
+          error
+        );
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Agent ${extension} logged out successfully.`,
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("[UsersController] Error during agent logout:", err);
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
   }
 };
 
@@ -1275,6 +1326,84 @@ export const getAgentPauseStatus = async (req, res) => {
       success: false,
       message: "Failed to get agent pause status",
       error: error.message,
+    });
+  }
+};
+
+/**
+ * Refresh access token using refresh token
+ */
+export const refreshAccessToken = async (req, res) => {
+  const { refreshToken } = req.body;
+
+  try {
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        error: "Refresh token is required",
+      });
+    }
+
+    // Validate refresh token
+    const validation = await refreshTokenService.validateRefreshToken(
+      refreshToken
+    );
+
+    if (!validation.valid) {
+      return res.status(403).json({
+        success: false,
+        error: validation.error || "Invalid or expired refresh token",
+        requiresReLogin: true,
+      });
+    }
+
+    // Get user from database
+    const user = await UserModel.findOne({
+      where: { id: validation.userId },
+      attributes: ["id", "username", "role", "extension", "email"],
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found",
+        requiresReLogin: true,
+      });
+    }
+
+    // Generate new token pair
+    const { accessToken, refreshToken: newRefreshTokenJWT } =
+      generateTokenPair(user);
+
+    // Optional: Rotate refresh token (create new one and revoke old)
+    const clientFingerprint =
+      req.body.fingerprint || req.get("User-Agent") || "unknown";
+    const newRefreshToken = await refreshTokenService.rotateRefreshToken(
+      refreshToken,
+      clientFingerprint
+    );
+
+    console.log(
+      `✅ [UsersController] Refreshed tokens for user ${user.username}`
+    );
+
+    res.status(200).json({
+      success: true,
+      token: accessToken,
+      refreshToken: newRefreshToken.token,
+      user: {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        extension: user.extension,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    console.error("[UsersController] Error refreshing access token:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to refresh token",
     });
   }
 };

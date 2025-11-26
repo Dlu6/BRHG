@@ -4,7 +4,7 @@ import { storageService } from "./storageService";
 function resolvePreferredOrigin() {
   try {
     const useRemote = localStorage.getItem("useRemoteUrl") === "true";
-    if (useRemote) return "https://cs.backspace.ug/mayday-api";
+    if (useRemote) return "https://cs.brhgroup.co/mayday-api";
   } catch (_) {}
 
   if (
@@ -17,7 +17,7 @@ function resolvePreferredOrigin() {
   }
   return process.env.NODE_ENV === "development"
     ? "http://localhost:8004"
-    : "https://cs.backspace.ug/mayday-api";
+    : "https://cs.brhgroup.co/mayday-api";
 }
 
 const baseUrl = `${resolvePreferredOrigin()}/api/sms`;

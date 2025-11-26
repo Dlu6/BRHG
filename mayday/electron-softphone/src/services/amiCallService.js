@@ -4,7 +4,7 @@ const getBase = () => {
   const host =
     process.env.NODE_ENV === "development"
       ? "http://localhost:8004"
-      : "https://cs.backspace.ug/mayday-api";
+      : "https://cs.brhgroup.co/mayday-api";
   return host;
 };
 

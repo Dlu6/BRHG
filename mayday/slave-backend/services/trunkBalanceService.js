@@ -3,9 +3,19 @@ import axios from "axios";
 const baseUrl =
   process.env.TRUNK_PROVIDER_API_URL ||
   "https://ug.cyber-innovative.com:444/cyber-api/cyber_validate.php";
-const authHeader =
-  process.env.TRUNK_PROVIDER_AUTH_HEADER ||
-  "Basic MDMyMDAwMDAwNTo2NS4wLjEwOC43OQ==";
+
+// Server IP for authorization (can be overridden by env var)
+const serverIp = process.env.SERVER_PUBLIC_IP || "3.111.43.161";
+
+/**
+ * Generate Basic Auth header for a specific account
+ * Format: Basic base64(account_number:server_ip)
+ */
+const generateAuthHeader = (accountNumber) => {
+  const credentials = `${accountNumber}:${serverIp}`;
+  const base64Credentials = Buffer.from(credentials).toString("base64");
+  return `Basic ${base64Credentials}`;
+};
 
 export const checkBalance = async (accountNumber) => {
   // Only allow balance checking in production environment
@@ -19,6 +29,11 @@ export const checkBalance = async (accountNumber) => {
   }
 
   try {
+    // Generate account-specific authorization header
+    const authHeader = generateAuthHeader(accountNumber);
+
+    console.log(`[Balance Check] Checking balance for account: ${accountNumber}`);
+
     const response = await axios.post(
       baseUrl,
       new URLSearchParams({
@@ -33,6 +48,8 @@ export const checkBalance = async (accountNumber) => {
       }
     );
 
+    console.log(`[Balance Check] Response:`, response.data);
+
     return {
       success: true,
       data: response.data,
@@ -40,6 +57,7 @@ export const checkBalance = async (accountNumber) => {
     };
   } catch (error) {
     console.error("Error checking trunk balance:", error);
+    console.error("Error response:", error.response?.data);
     return {
       success: false,
       error: error.response?.data || error.message,

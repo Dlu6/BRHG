@@ -1,23 +1,5 @@
 // server.js
 import express from "express";
-
-// Handle unhandled promise rejections to prevent server crashes
-process.on("unhandledRejection", (reason, promise) => {
-  console.warn(
-    chalk.yellow("⚠️ Unhandled Rejection at:"),
-    promise,
-    "reason:",
-    reason
-  );
-  console.log(chalk.blue("💡 Server will continue running despite this error"));
-  // Don't exit the process
-});
-
-process.on("uncaughtException", (error) => {
-  console.error(chalk.red("❌ Uncaught Exception:"), error);
-  console.log(chalk.blue("💡 Server will continue running despite this error"));
-  // Don't exit the process
-});
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -30,10 +12,11 @@ import { json } from "express";
 import redisClient, { initializeRedis } from "./config/redis.js";
 import RedisStore from "connect-redis";
 import bcrypt from "bcrypt";
-import sequelize, { syncDatabase } from "./config/sequelize.js";
+import sequelize, { syncDatabase, fixAsteriskSchema } from "./config/sequelize.js";
 import contextRoutes from "./routes/contextRoutes.js";
 import UserModel from "./models/usersModel.js";
 import authRoutes from "./routes/UsersRoute.js";
+import refreshTokenService from "./services/refreshTokenService.js";
 // import sipRoutes from "./routes/sipRoutes.js";
 // import asteriskRoutes from "./routes/asteriskRoute.mjs";
 import trunkRoutes from "./routes/trunkRoute.mjs";
@@ -82,7 +65,7 @@ import { setupAssociations } from "./models/usersModel.js";
 import { setupIntegrationAssociations } from "./models/associations.js";
 import IntegrationModel from "./models/integrationModel.js";
 import IntegrationDataModel from "./models/integrationDataModel.js";
-import VoiceExtension from "./models/voiceExtensionModel.js";
+// import VoiceExtension from "./models/voiceExtensionModel.js"; // Removed as unused
 import {
   // LicenseType,
   // ServerLicense,
@@ -115,7 +98,7 @@ let io;
 
 // Set up CORS options
 const allowedOrigins = [
-  "https://cs.backspace.ug",
+  "https://cs.brhgroup.co",
   // Environment-based origins
   process.env.SLAVE_SERVER_URL,
   process.env.MASTER_SERVER_URL,
@@ -136,8 +119,9 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:8004",
   "ws://localhost:8004",
-  `http://43.205.91.97:8004`,
-  `ws://43.205.91.97:8004`,
+  `http://3.111.43.161`,
+  `http://3.111.43.161:8004`,
+  `ws://3.111.43.161:8004`,
   // `https://cs.lusuku.shop`,
   // `wss://cs.lusuku.shop`,
   // `ws://cs.lusuku.shop`,
@@ -171,9 +155,9 @@ const corsOptions = {
     }
 
     // Always allow our public domain and subdomains
-    const backspacePattern =
-      /^https?:\/\/([\w-]+\.)*cs\.backspace\.ug\.com(?::\d+)?$/i;
-    if (backspacePattern.test(origin)) {
+    const brhgroupPattern =
+      /^https?:\/\/([\w-]+\.)*cs\.brhgroup\.co(?::\d+)?$/i;
+    if (brhgroupPattern.test(origin)) {
       callback(null, true);
       return;
     }
@@ -483,6 +467,9 @@ const initializeApp = async () => {
     // await CallRecords.sync();
     console.log(chalk.green("Database synchronized successfully"));
 
+    // Fix Asterisk PJSIP schema issues (e.g., ps_contacts.expiration_timestamp)
+    await fixAsteriskSchema();
+
     // Outbound helper is managed in file dialplan (extensions_mayday_context.conf)
 
     // Fix license schema before proceeding
@@ -775,6 +762,45 @@ const initializeApp = async () => {
     //   console.error(chalk.red("✗ Failed to start FastAGI Server:"), error);
     //   console.error(chalk.red("Stack trace:"), error.stack);
     // }
+
+    // Schedule refresh token cleanup job (runs every 24 hours)
+    const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    console.log(chalk.blue("🔄 Scheduling refresh token cleanup job..."));
+
+    // Run cleanup immediately on startup
+    try {
+      const cleanedCount = await refreshTokenService.cleanupExpiredTokens();
+      console.log(
+        chalk.green(
+          `✓ Initial cleanup: Removed ${cleanedCount} expired refresh tokens`
+        )
+      );
+    } catch (error) {
+      console.error(chalk.red("✗ Initial cleanup failed:"), error);
+    }
+
+    // Schedule recurring cleanup
+    const cleanupInterval = setInterval(async () => {
+      try {
+        console.log(
+          chalk.blue("🔄 Running scheduled refresh token cleanup...")
+        );
+        const cleanedCount = await refreshTokenService.cleanupExpiredTokens();
+        console.log(
+          chalk.green(
+            `✓ Cleanup complete: Removed ${cleanedCount} expired refresh tokens`
+          )
+        );
+      } catch (error) {
+        console.error(chalk.red("✗ Scheduled cleanup failed:"), error);
+      }
+    }, CLEANUP_INTERVAL);
+
+    // Store cleanup interval for graceful shutdown
+    global.refreshTokenCleanupInterval = cleanupInterval;
+    console.log(
+      chalk.green(`✓ Refresh token cleanup scheduled (every 24 hours)`)
+    );
   } catch (error) {
     console.error(chalk.red("✗ Failed to initialize app:"), error);
     process.exit(1);
@@ -785,6 +811,12 @@ async function cleanup() {
   console.log("Starting server cleanup...");
 
   try {
+    // Clear refresh token cleanup interval
+    if (global.refreshTokenCleanupInterval) {
+      clearInterval(global.refreshTokenCleanupInterval);
+      console.log("Refresh token cleanup interval cleared");
+    }
+
     // Stop cache cleanup service
     stopCacheCleanupService();
     console.log("Cache cleanup service stopped");
